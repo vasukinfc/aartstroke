@@ -1,0 +1,835 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Aart Stroke digital approval and production form.">
+<title>Aart Stroke — Production Form</title>
+<style>
+:root{
+  --page:#f5f7fa;--card:#fff;--line:#cfd6de;--text:#1d2835;--muted:#697584;
+  --blue:#2f78e7;--blue-soft:#eef5ff;--green:#3aa373;--danger:#b64040;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--page);font-family:Arial,Helvetica,sans-serif;color:var(--text)}
+body{min-height:100vh}button,input,select{font:inherit}
+.topbar{min-height:62px;background:#fff;border-bottom:1px solid #e2e6ea;display:flex;justify-content:flex-end;align-items:center;gap:8px;padding:10px 24px;flex-wrap:wrap}
+.btn{min-height:34px;padding:0 14px;border-radius:6px;border:1px solid #b8c7dc;background:#fff;color:#2c67b8;font-size:11px;cursor:pointer}.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}.btn.danger{color:var(--danger);border-color:#ddb1b1}
+.btn:focus-visible,.order-action:focus-visible,.art-upload-btn:focus-visible,.art-change-btn:focus-visible,.process-edit-btn:focus-visible,.colour-swatch:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+.wrap{max-width:970px;margin:0 auto;padding:22px 10px 34px}.sheet{background:#fff;border:1px solid #d3d9df;border-radius:8px;box-shadow:0 3px 12px rgba(18,34,49,.07);padding:14px}
+.field input,.field select,.meta input,.approval-row input,.approval-row select,.approval-signature input,.approval-footer input,.order-search,.colour-name,.colour-ink-input{
+  width:100%;height:31px;border:1px solid #cbd2da;border-radius:4px;padding:4px 7px;font-size:10px;color:#384250;background:#fff
+}
+.field input:focus,.field select:focus,.meta input:focus,.approval-row input:focus,.approval-row select:focus,.approval-signature input:focus,.approval-footer input:focus,.order-search:focus,.colour-name:focus,.colour-ink-input:focus{border-color:#7ba8e8;box-shadow:0 0 0 2px rgba(47,120,231,.12);outline:none}
+.header{display:grid;grid-template-columns:150px 1fr 175px;border:1px solid #8f969f;background:#fff;min-height:96px}.logo-panel{border-right:1px solid #b7bdc5;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:9px;text-align:center}.logo-swoosh{font-size:28px;line-height:16px;font-weight:700;color:#4c5157;transform:rotate(-12deg);letter-spacing:-5px}.logo-name{font-size:18px;font-weight:700;letter-spacing:.6px;color:#565c63}.logo-sub{font-size:7px;letter-spacing:.9px;color:#737a82;margin-top:4px;white-space:nowrap}.logo-foot{font-size:7px;font-weight:700;letter-spacing:.7px;color:#666d75;margin-top:8px}
+.heading{padding:14px 16px;display:flex;flex-direction:column;justify-content:center}.heading h1{margin:0 0 10px;font-size:24px;line-height:1.05;font-weight:700;color:#4c5259}.heading ul{margin:0;padding-left:18px}.heading li{font-size:13px;line-height:1.4;margin:2px 0;color:#434a52}.inline-date{width:110px;height:28px;margin-left:6px}
+.meta{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto 1fr}.meta .cell{padding:7px 8px;border-bottom:1px solid #cdd2d8;font-size:9px}.meta .cell:nth-child(odd){border-right:1px solid #cdd2d8}.meta .big{grid-column:1/3;display:flex;align-items:flex-start;padding:9px 10px}.meta label,.field label{display:block;font-size:9px;font-weight:700;color:#4d555e;margin-bottom:4px}.cl{font-size:24px;font-weight:700;color:#4f565d}
+.data{display:grid;grid-template-columns:1.08fr 1fr 1.1fr .9fr .86fr;border:1px solid #c5cad0;border-top:0}.data .field{padding:9px 10px;border-right:1px solid #d5d9df}.data .field:last-child{border-right:0}.unit-input{display:flex;align-items:center;gap:6px}.unit-input input{flex:1;min-width:0}.unit{font-size:10px;color:#596371;white-space:nowrap}
+.artwork,.process,.approval{margin-top:14px;border:1px solid #bfc7d0;border-radius:5px;background:#fff}.artwork{padding:10px 12px}.art-title{font-size:16px;font-weight:700;margin-bottom:9px}.art-box{height:270px;border:1px dashed #c5cbd2;border-radius:4px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;background:#fff}.art-img{max-width:84%;max-height:238px;object-fit:contain;display:block;box-shadow:0 2px 4px rgba(0,0,0,.12)}.art-upload-zone{position:absolute;inset:0;z-index:4;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;text-align:center;background:rgba(255,255,255,.96);border:2px dashed #b9c4d0;border-radius:4px;color:#657181}.art-upload-zone.dragover{border-color:var(--blue);background:#eef5ff}.art-upload-icon{font-size:29px}.art-upload-title{font-size:13px;font-weight:700;color:#3f4a57}.art-upload-sub{font-size:10px;color:#7b8795}.art-upload-btn,.art-change-btn{border:1px solid #b8c7dc;background:#fff;color:#2c67b8;border-radius:5px;padding:7px 13px;font-size:10px;cursor:pointer}.art-file-input{display:none}.art-change-btn{position:absolute;right:10px;bottom:10px;display:none;z-index:5}.art-box.has-image .art-upload-zone{display:none}.art-box.has-image .art-change-btn{display:block}.metal{position:absolute;right:22%;top:-17px;font-size:10px;color:#202733;white-space:nowrap}.metal-line{position:absolute;width:72px;height:1px;background:#727a84;right:calc(22% + 3px);top:10px;transform:rotate(-35deg);transform-origin:right center}
+.process{padding:11px 12px}.process-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.process-head h2{font-size:16px;margin:0 0 2px}.process-head p{font-size:10px;color:var(--muted);margin:0}.process-actions{display:flex;align-items:center;gap:8px}.percent{font-size:23px;font-weight:800}.process-edit-btn{height:28px;padding:0 10px;border:1px solid #b8c7dc;background:#fff;color:#2c67b8;border-radius:5px;font-size:10px;cursor:pointer}.progress{height:8px;border-radius:8px;background:#edf0f3;margin:10px 0 15px;overflow:hidden}.progress span{display:block;height:100%;background:var(--blue);width:0;border-radius:8px}.steps{display:grid;grid-template-columns:repeat(7,1fr);gap:0}.step{text-align:center;position:relative;min-width:0}.step:not(:last-child)::after{content:'›';position:absolute;right:-4px;top:6px;color:#778291;font-size:18px}.circle{width:26px;height:26px;border-radius:50%;margin:0 auto 6px;border:1px solid #c3cbd5;background:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;color:#596371}.step.done .circle{background:var(--green);border-color:var(--green);color:#fff}.step.active .circle{background:var(--blue);border-color:var(--blue);color:#fff}.step-title{font-size:9px;font-weight:700;line-height:1.1;min-height:24px;padding:0 2px}.status{display:inline-block;font-size:8px;padding:3px 7px;border-radius:8px;background:#eef1f4;color:#6a7380;margin-top:4px}.step.active .status{background:#eef5ff;color:#1970e9;border:1px solid #9fc2ff}.step small{display:block;color:#7c8795;font-size:8px;line-height:1.2;margin-top:4px}
+.approval{overflow:hidden}.approval-title{height:40px;display:flex;align-items:center;justify-content:center;border-bottom:1px solid #9ca3aa;font-size:18px;font-weight:700;color:#4b5158}.approval-body{display:grid;grid-template-columns:52% 48%}.approval-left{border-right:1px solid #9ca3aa}.approval-row{display:grid;grid-template-columns:145px 12px 1fr;align-items:center;min-height:36px;padding:5px 10px;border-bottom:1px solid #cdd2d7;font-size:11px;color:#4f565e}.approval-row>span:first-child{font-weight:500}.approval-size{grid-template-columns:145px 12px 12px 58px 22px 44px 12px 58px 22px 44px}.dim-label{text-align:right}.approval-colours{display:grid;grid-template-columns:145px 12px 1fr;align-items:start;padding:7px 10px 8px;min-height:84px;font-size:11px;color:#4f565e}.colour-items{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;align-items:start}.colour-item{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0}.colour-item-top{display:flex;align-items:center;justify-content:center;gap:4px;width:100%}.colour-check{display:block!important;width:13px!important;height:13px!important;margin:0!important;accent-color:#555c64}.colour-swatch{width:40px;height:28px;border:1px solid #8f969f;border-radius:2px;padding:0;cursor:pointer;background:#fff}.colour-picker{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}.colour-name{height:20px!important;padding:2px 3px!important;text-align:center;font-size:8px!important}.colour-ink{display:flex;align-items:center;justify-content:center;gap:3px;width:100%;font-size:8px;color:#606975}.colour-ink-input{width:38px!important;height:20px!important;text-align:center;font-size:8px!important}.colour-item.is-unchecked .colour-swatch{opacity:.45}
+.approval-finishing{display:grid;grid-template-columns:84px 1fr;min-width:0}.finishing-label{border-right:1px solid #cdd2d7;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#4f565e}.finishing-options{display:grid;grid-template-columns:1fr 1fr}.finishing-options label{display:flex;align-items:center;gap:7px;padding:5px 10px;border-bottom:1px solid #cdd2d7;font-size:10px;color:#4f565e;min-height:35px}.finishing-options label:nth-child(odd){border-right:1px solid #cdd2d7}.finishing-options input,.approval-direction input{width:13px;height:13px;margin:0;accent-color:#555c64}.approval-direction{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid #9ca3aa;border-bottom:1px solid #9ca3aa;min-height:38px;align-items:center;font-size:10px;color:#4f565e}.approval-direction label{padding:7px 10px;display:flex;align-items:center;gap:5px;border-right:1px solid #cdd2d7;white-space:nowrap}.approval-direction label:last-child{border-right:0}.approval-direction .direction-last{justify-content:flex-end}.approval-signature{display:grid;grid-template-columns:1fr 1fr;min-height:92px;border-bottom:1px solid #9ca3aa}.signature-area{padding:11px 12px;border-right:1px solid #cdd2d7;display:flex;flex-direction:column;gap:10px}.date-area{padding:11px 12px;display:flex;align-items:flex-end;gap:8px}.signature-area strong,.date-area strong{font-size:11px;color:#4f565e}.signature-area input{margin-top:auto}.approval-footer{display:grid;grid-template-columns:1.2fr 1.2fr 1fr;min-height:44px}.approval-footer>div{display:grid;grid-template-columns:auto 12px 1fr;align-items:center;padding:6px 10px;border-right:1px solid #cdd2d7;gap:6px;font-size:10px;color:#4f565e}.approval-footer>div:last-child{border-right:0}.approval-footer strong{white-space:nowrap}
+.actions{display:flex;justify-content:center;gap:10px;margin-top:14px}
+.order-ledger{max-width:970px;margin:14px auto 30px;background:#fff;border:1px solid #cfd5dc;border-radius:8px;box-shadow:0 2px 8px rgba(18,34,49,.06);overflow:hidden}.order-ledger-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-bottom:1px solid #e2e6ea}.order-ledger-title{display:flex;flex-direction:column;gap:3px}.order-ledger-title strong{font-size:13px}.order-ledger-title span{font-size:9px;color:var(--muted)}.order-ledger-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap}.order-count{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 7px;border-radius:12px;background:var(--blue-soft);color:#2563eb;font-size:9px;font-weight:700}.order-ledger-body{padding:10px 12px}.order-toolbar{margin-bottom:9px}.order-search{height:32px!important;font-size:10px!important}.order-list-wrap{border:1px solid #e1e5e9;border-radius:5px;overflow:auto}.order-table{width:100%;border-collapse:collapse;min-width:860px}.order-table th,.order-table td{padding:8px 9px;border-bottom:1px solid #edf0f2;text-align:left;vertical-align:middle;font-size:9px;color:#4f5965}.order-table th{background:#fafbfc;color:#5b6570;font-size:8px;font-weight:700;position:sticky;top:0;z-index:1}.order-table tbody tr:hover{background:#fbfdff}.order-table tbody tr.current{background:#eef5ff}.order-no{font-weight:700;color:#2563eb}.order-customer{font-weight:700;color:#36404b}.order-actions{display:flex;gap:5px;white-space:nowrap}.order-action{height:25px;padding:0 8px;border:1px solid #b8c7dc;border-radius:4px;background:#fff;color:#2c67b8;font-size:8px;cursor:pointer}.order-action.danger{color:var(--danger);border-color:#dfb8b8}.order-empty{text-align:center;padding:24px 12px;font-size:10px;color:#7a8591}.order-ledger-message{display:none;margin-bottom:9px;padding:8px 10px;border-radius:4px;border:1px solid #bfe1cf;background:#edf8f1;color:#2f7955;font-size:9px}.order-ledger-message.show{display:block}
+.hidden{display:none!important}
+@media screen and (max-width:900px){
+ .topbar{justify-content:center}.header{grid-template-columns:1fr}.logo-panel{border-right:0;border-bottom:1px solid #b7bdc5;min-height:76px}.meta{border-top:1px solid #b7bdc5}.data{grid-template-columns:1fr 1fr}.approval-body{grid-template-columns:1fr}.approval-left{border-right:0;border-bottom:1px solid #9ca3aa}.approval-finishing{grid-template-columns:84px 1fr}.approval-signature{grid-template-columns:1fr}.date-area{border-top:1px solid #cdd2d7}.approval-footer{grid-template-columns:1fr}.approval-footer>div{border-right:0;border-bottom:1px solid #cdd2d7}.approval-footer>div:last-child{border-bottom:0}
+}
+@media screen and (max-width:760px){
+ .wrap{padding:10px 8px 24px}.sheet{padding:8px}.topbar .btn{flex:1 1 150px}.heading h1{font-size:20px}.heading li{font-size:12px}.data{grid-template-columns:1fr}.approval-row{grid-template-columns:120px 12px 1fr}.approval-size{grid-template-columns:120px 10px 10px 58px 18px 40px 10px 58px 18px 40px}.approval-colours{grid-template-columns:120px 12px 1fr}.colour-items{grid-template-columns:repeat(4,1fr);row-gap:8px}.finishing-options{grid-template-columns:1fr}.finishing-options label:nth-child(odd){border-right:0}.approval-direction{grid-template-columns:1fr}.approval-direction label{border-right:0;border-bottom:1px solid #cdd2d7}.approval-direction label:last-child{border-bottom:0}.order-ledger{margin-left:8px;margin-right:8px}.order-ledger-head{align-items:flex-start;flex-direction:column}
+}
+@page {
+  size: A4 portrait;
+  margin: 5mm;
+}
+
+@media print {
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  html,
+  body {
+    width: 200mm !important;
+    min-height: 287mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    overflow: visible !important;
+  }
+
+  .topbar,
+  .actions,
+  .order-ledger,
+  .art-upload-zone,
+  .art-change-btn,
+  .process-edit-btn {
+    display: none !important;
+  }
+
+  /* The 0.76 print zoom scales the full form evenly to the A4 printable area.
+     The wider layout preserves the original grid proportions before scaling. */
+  .wrap {
+    width: 200mm !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  .sheet {
+    width: 263.158mm !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 4mm !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    background: #fff !important;
+    zoom: 0.76;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  .sheet,
+  .sheet * {
+    font-size: 16px !important;
+  }
+
+  .sheet .heading h1 {
+    font-size: 24px !important;
+    line-height: 1.05 !important;
+  }
+
+  .header,
+  .data,
+  .artwork,
+  .process,
+  .approval {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  .header {
+    grid-template-columns: 42mm minmax(0, 1fr) 47mm !important;
+    min-height: 30mm !important;
+  }
+
+  .logo-panel {
+    min-width: 0 !important;
+    padding: 3mm !important;
+  }
+
+  .heading {
+    min-width: 0 !important;
+    padding: 3mm 4mm !important;
+  }
+
+  .heading h1 {
+    overflow-wrap: anywhere !important;
+    margin-bottom: 5px !important;
+  }
+
+  .heading ul {
+    padding-left: 18px !important;
+  }
+
+  .heading li {
+    font-size: 16px !important;
+    line-height: 1.15 !important;
+    margin: 1px 0 !important;
+  }
+
+  .inline-date {
+    width: 38mm !important;
+    height: 7mm !important;
+    margin-left: 2mm !important;
+  }
+
+  .meta .cell {
+    min-width: 0 !important;
+    padding: 2.5mm !important;
+  }
+
+  .meta .big {
+    padding: 3mm !important;
+  }
+
+  .field input,
+  .field select,
+  .meta input,
+  .approval-row input,
+  .approval-row select,
+  .approval-signature input,
+  .approval-footer input {
+    min-width: 0 !important;
+    height: 7mm !important;
+    font-size: 16px !important;
+    padding: 1mm 1.5mm !important;
+  }
+
+  .data {
+    grid-template-columns: 1.08fr 1fr 1.1fr .9fr .86fr !important;
+  }
+
+  .data .field {
+    min-width: 0 !important;
+    padding: 2.5mm !important;
+  }
+
+  .unit-input {
+    min-width: 0 !important;
+    gap: 2mm !important;
+  }
+
+  .unit-input input {
+    min-width: 0 !important;
+  }
+
+  .artwork {
+    margin-top: 3mm !important;
+    padding: 2.5mm !important;
+  }
+
+  .art-title {
+    margin-bottom: 2mm !important;
+  }
+
+  .art-box {
+    height: 68mm !important;
+  }
+
+  .art-img {
+    max-height: 59mm !important;
+    max-width: 90% !important;
+  }
+
+  .metal {
+    top: -7mm !important;
+  }
+
+  .process {
+    margin-top: 3mm !important;
+    padding: 2.5mm !important;
+  }
+
+  .process-head p {
+    font-size: 12px !important;
+  }
+
+  .percent {
+    font-size: 20px !important;
+  }
+
+  .progress {
+    height: 2.2mm !important;
+    margin: 2mm 0 3mm !important;
+  }
+
+  .circle {
+    width: 6mm !important;
+    height: 6mm !important;
+    margin-bottom: 1.5mm !important;
+  }
+
+  .step:not(:last-child)::after {
+    top: 1mm !important;
+  }
+
+  .step-title {
+    min-height: 9mm !important;
+    line-height: 1.1 !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  .status {
+    padding: 1mm 1.5mm !important;
+    margin-top: 1mm !important;
+  }
+
+  .step small {
+    margin-top: 1mm !important;
+    line-height: 1.15 !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  .approval {
+    margin-top: 3mm !important;
+  }
+
+  .approval-title {
+    height: 9mm !important;
+  }
+
+  .approval-body {
+    grid-template-columns: 52% 48% !important;
+    min-width: 0 !important;
+  }
+
+  .approval-left,
+  .approval-finishing,
+  .approval-row,
+  .approval-colours,
+  .approval-footer > div {
+    min-width: 0 !important;
+  }
+
+  .approval-row {
+    grid-template-columns: 37mm 4mm minmax(0, 1fr) !important;
+    min-height: 8mm !important;
+    padding: 1mm 2mm !important;
+  }
+
+  .approval-row input,
+  .approval-row select,
+  .approval-signature input,
+  .approval-footer input {
+    height: 6.5mm !important;
+  }
+
+  .approval-row #name {
+    font-weight: 700 !important;
+  }
+
+  .approval-row.approval-size {
+    grid-template-columns: 29mm 3mm 3mm minmax(8mm, 1fr) 4mm 9mm 3mm minmax(8mm, 1fr) 4mm 9mm !important;
+    column-gap: 0 !important;
+  }
+
+  .approval-colours {
+    grid-template-columns: 29mm 3mm minmax(0, 1fr) !important;
+    padding: 1.5mm 2mm !important;
+    min-height: 21mm !important;
+  }
+
+  .colour-items {
+    grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+    gap: 1mm !important;
+  }
+
+  .colour-item,
+  .colour-item-top,
+  .colour-ink {
+    min-width: 0 !important;
+  }
+
+  .colour-item-top {
+    gap: 1mm !important;
+  }
+
+  .colour-check {
+    flex: 0 0 auto !important;
+    width: 4mm !important;
+    height: 4mm !important;
+  }
+
+  .colour-swatch {
+    flex: 0 0 auto !important;
+    width: 7mm !important;
+    height: 5.5mm !important;
+  }
+
+  .colour-name {
+    width: 100% !important;
+    height: 5mm !important;
+    min-width: 0 !important;
+    padding: .5mm !important;
+    font-size: 10px !important;
+  }
+
+  .colour-ink {
+    gap: .5mm !important;
+    font-size: 10px !important;
+  }
+
+  .colour-ink-input {
+    width: 8mm !important;
+    min-width: 0 !important;
+    height: 5mm !important;
+    padding: .5mm !important;
+    font-size: 10px !important;
+  }
+
+  .approval-finishing {
+    grid-template-columns: 22mm minmax(0, 1fr) !important;
+  }
+
+  .finishing-label {
+    text-align: center !important;
+  }
+
+  .finishing-options {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .finishing-options label {
+    min-width: 0 !important;
+    min-height: 7mm !important;
+    padding: 1mm 1.5mm !important;
+    gap: 1mm !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  .finishing-options input,
+  .approval-direction input {
+    flex: 0 0 auto !important;
+    width: 4mm !important;
+    height: 4mm !important;
+  }
+
+  .approval-direction {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    min-height: 8mm !important;
+  }
+
+  .approval-direction label {
+    min-width: 0 !important;
+    padding: 1mm 1.5mm !important;
+    white-space: normal !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  .approval-signature {
+    grid-template-columns: 1fr 1fr !important;
+    min-height: 18mm !important;
+  }
+
+  .signature-area,
+  .date-area {
+    min-width: 0 !important;
+    padding: 2mm !important;
+  }
+
+  .signature-area {
+    gap: 1mm !important;
+  }
+
+  .date-area {
+    gap: 2mm !important;
+  }
+
+  .approval-footer {
+    grid-template-columns: 1.2fr 1.2fr 1fr !important;
+    min-height: 9mm !important;
+  }
+
+  .approval-footer > div {
+    grid-template-columns: auto 3mm minmax(0, 1fr) !important;
+    gap: 1mm !important;
+    padding: 1mm 1.5mm !important;
+  }
+
+  .approval-footer strong {
+    white-space: normal !important;
+  }
+}
+
+</style>
+</head>
+<body>
+<div class="topbar" aria-label="Production actions">
+  <button class="btn" id="homeBtn" type="button">⌂ Home</button>
+  <button class="btn" id="saveBtn" type="button">▣ Save Order</button>
+  <button class="btn" id="saveNewBtn" type="button">＋ Save as New</button>
+  <button class="btn" id="recordsBtn" type="button">▤ Order Records</button>
+  <button class="btn" id="processBtn" type="button">⚙ Making Process</button>
+  <button class="btn primary" id="printBtn" type="button">▣ Print Form</button>
+</div>
+
+<main class="wrap">
+<div class="sheet">
+<section class="header">
+  <div class="logo-panel">
+    <div class="logo-swoosh">⌁</div><div class="logo-name">AART STROKE</div><div class="logo-sub">LABELS &amp; PACKAGING</div><div class="logo-foot">PRINT • LABEL • PACK</div>
+  </div>
+  <div class="heading">
+    <h1>AFFIRMATION OF DIGITAL DATA</h1>
+    <ul>
+      <li>FOR APPROVAL OF ALL TEXT MATTER.</li>
+      <li>ACTUAL COLORS WILL BE MATCHED AS PER PANTONE OR SAMPLE.</li>
+      <li>SUBMITTED ON : <input id="submittedOn" class="inline-date" type="date" aria-label="Submitted on"></li>
+    </ul>
+  </div>
+  <div class="meta">
+    <div class="cell"><label for="formatNo">Format No.</label><input id="formatNo" value="F-001"></div>
+    <div class="cell"><label for="revDate">Rev. Date</label><input id="revDate" type="date"></div>
+    <div class="big"><div class="cl">CL</div></div>
+  </div>
+</section>
+
+<section class="data">
+  <div class="field"><label for="submittedBy">Submitted by</label><input id="submittedBy" value="Rohit Sharma"></div>
+  <div class="field"><label for="submittedFor">Submitted for</label><select id="submittedFor"><option>Production</option><option>Customer</option><option>Approval</option></select></div>
+  <div class="field"><label for="ink">Ink Consumption</label><div class="unit-input"><input id="ink" value="5" inputmode="decimal"><span class="unit">mm</span></div></div>
+  <div class="field"><label for="time">Time</label><input id="time" value="4 Days"></div>
+  <div class="field"><label for="dye">Dye No.</label><input id="dye" value="D-102"></div>
+</section>
+
+<section class="artwork">
+  <div class="art-title">Sticker / Label Artwork</div>
+  <div id="artBox" class="art-box">
+    <div id="artUploadZone" class="art-upload-zone">
+      <div class="art-upload-icon">↥</div>
+      <div class="art-upload-title">Drag &amp; Drop Sticker / Label Artwork</div>
+      <div class="art-upload-sub">or click the button below to upload an image</div>
+      <button type="button" class="art-upload-btn" id="artUploadBtn">Upload File</button>
+      <div class="art-upload-sub">PNG, JPG, JPEG, WEBP, SVG</div>
+    </div>
+    <input id="artFileInput" class="art-file-input" type="file" accept="image/png,image/jpeg,image/jpg,image/webp,image/svg+xml">
+    <div class="metal">Metallic Effect</div><div class="metal-line"></div>
+    <img id="artPreview" class="art-img" alt="Sticker / label artwork">
+    <button type="button" class="art-change-btn" id="artChangeBtn">Change Artwork</button>
+  </div>
+</section>
+
+<section class="process">
+  <div class="process-head">
+    <div><h2>MAKING PROCESS</h2><p>Production status of this artwork</p></div>
+    <div class="process-actions"><div class="percent" id="pct">0%</div><button class="process-edit-btn" id="processEditBtn" type="button">Edit</button></div>
+  </div>
+  <div class="progress"><span id="bar"></span></div>
+  <div class="steps" id="steps"></div>
+</section>
+
+<section class="approval">
+  <div class="approval-title">FOR APPROVAL</div>
+  <div class="approval-body">
+    <div class="approval-left">
+      <div class="approval-row"><span>Customer Name</span><b>:</b><input id="name" value="ABC Traders"></div>
+      <div class="approval-row"><span>Label Description</span><b>:</b><input id="description" value="Herbal Hair Oil Label"></div>
+      <div class="approval-row approval-size">
+        <span>Label Size</span><b>:</b><span class="dim-label">W</span><input id="w" value="80" inputmode="decimal"><span>mm</span><span class="inch-value" id="wInch">3.15 in</span>
+        <span class="dim-label">H</span><input id="h" value="120" inputmode="decimal"><span>mm</span><span class="inch-value" id="hInch">4.72 in</span>
+      </div>
+      <div class="approval-row"><span>Substrate</span><b>:</b>
+        <select id="material"><option>Glossy Paper</option><option>PP Silver</option><option>PP White</option><option>PP Clear</option><option>PPE</option><option>Paper</option></select>
+      </div>
+      <div class="approval-row"><span>Product Code</span><b>:</b><input id="productCode" value="AD"></div>
+      <div class="approval-row"><span>Qty.</span><b>:</b><input id="qty" value="5000" inputmode="numeric"></div>
+      <div class="approval-colours"><span>Colours</span><b>:</b><div class="colour-items" id="colourItems"></div></div>
+    </div>
+
+    <div class="approval-finishing">
+      <div class="finishing-label">Finishing :</div>
+      <div class="finishing-options">
+        <label><input type="checkbox" data-finish="Gloss Varnish" checked> Gloss Varnish</label>
+        <label><input type="checkbox" data-finish="Lamination"> Lamination</label>
+        <label><input type="checkbox" data-finish="Spot Varnish"> Spot Varnish</label>
+        <label><input type="checkbox" data-finish="Barcode Tested"> Barcode Tested</label>
+        <label><input type="checkbox" data-finish="Hot Foil Stamping"> Hot Foil Stamping</label>
+        <label><input type="checkbox" data-finish="Cold Foil Stamping"> Cold Foil Stamping</label>
+        <label><input type="radio" name="formType" value="roll" checked> Roll Form</label>
+        <label><input type="radio" name="formType" value="sheet"> Sheet Form</label>
+      </div>
+    </div>
+  </div>
+
+  <div class="approval-direction" role="group" aria-label="Label direction">
+    <label>Clockwise : <input type="radio" name="direction" value="clockwise" checked></label>
+    <label>Anti Clockwise : <input type="radio" name="direction" value="anticlockwise"></label>
+    <label class="direction-last">Left to Right <input type="radio" name="direction" value="ltr"></label>
+    <label>Top to Bottom <input type="radio" name="direction" value="ttb"></label>
+  </div>
+
+  <div class="approval-signature">
+    <div class="signature-area"><strong>Customer Signature :</strong><input id="signature" placeholder="Enter signature name"></div>
+    <div class="date-area"><strong>Date :</strong><input id="approvalDate" type="date"></div>
+  </div>
+
+  <div class="approval-footer">
+    <div><strong>PREPARED BY</strong><b>:</b><input id="preparedBy" value="Rohit Sharma"></div>
+    <div><strong>Checked By</strong><b>:</b><input id="checkedBy" placeholder="Enter name"></div>
+    <div><strong>APPROVED BY</strong><b>:</b><input id="approvedBy" placeholder="Enter name"></div>
+  </div>
+</section>
+
+<div class="actions">
+  <button class="btn" id="saveBtnBottom" type="button">▣ Save Order</button>
+  <button class="btn primary" id="printBtnBottom" type="button">▣ Print Form</button>
+</div>
+</div>
+</main>
+
+<section class="order-ledger" id="orderLedger">
+  <div class="order-ledger-head">
+    <div class="order-ledger-title"><strong>ORDER RECORDS</strong><span>Saved in this browser. Export CSV/Excel for backup.</span></div>
+    <div class="order-ledger-actions"><span class="order-count" id="orderCount">0</span><button class="btn" id="excelBtn" type="button">⇩ Excel</button><button class="btn" id="csvBtn" type="button">⇩ CSV</button><button class="btn danger" id="clearBtn" type="button">Clear All</button></div>
+  </div>
+  <div class="order-ledger-body">
+    <div class="order-ledger-message" id="message"></div>
+    <div class="order-toolbar"><input id="orderSearch" class="order-search" type="search" placeholder="Search order no., customer, description, product code or substrate"></div>
+    <div class="order-list-wrap">
+      <table class="order-table">
+        <thead><tr><th>Order No.</th><th>Saved</th><th>Customer</th><th>Description</th><th>Product Code</th><th>Qty.</th><th>Size (W × H mm)</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody id="orderTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<script>
+const ORDER_KEY='production-orders';
+const CURRENT_KEY='production-current-order';
+const FORM_KEY='production-form';
+const PROCESS_KEY='production-process';
+
+const defaultStages=[
+  {name:'Artwork Received',status:'pending',date:'',time:''},
+  {name:'Artwork Checking',status:'pending',date:'',time:''},
+  {name:'Printing',status:'pending',date:'',time:''},
+  {name:'Finishing',status:'pending',date:'',time:''},
+  {name:'Quality Checking',status:'pending',date:'',time:''},
+  {name:'Customer Approval',status:'pending',date:'',time:''},
+  {name:'Completed',status:'pending',date:'',time:''}
+];
+const defaultColours=[
+  {name:'Yellow',hex:'#e8df1d',ink:'5',checked:true},
+  {name:'MAGENTA',hex:'#b44a73',ink:'5',checked:true},
+  {name:'BLACK',hex:'#5b6064',ink:'5',checked:true},
+  {name:'CYAN',hex:'#6b8f92',ink:'5',checked:true},
+  {name:'Special Orange',hex:'#827f76',ink:'5',checked:true},
+  {name:'VARNISH',hex:'#ffffff',ink:'0',checked:false},
+  {name:'',hex:'#ffffff',ink:'0',checked:false}
+];
+
+let stages=structuredClone(defaultStages);
+let colours=structuredClone(defaultColours);
+let processProgress=0;
+let artworkReadyPromise=Promise.resolve();
+
+const $=id=>document.getElementById(id);
+function escapeHtml(v){return String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch]))}
+function readJson(key,fallback){try{const v=JSON.parse(localStorage.getItem(key)||fallback);return v}catch(e){return null}}
+function safeProgress(v){return Math.max(0,Math.min(100,Number(v)||0))}
+function toIsoDate(v){if(!v)return '';const s=String(v);if(/^\\d{4}-\\d{2}-\\d{2}$/.test(s))return s;const m=s.match(/^(\\d{2})-(\\d{2})-(\\d{4})$/);return m?`${m[3]}-${m[2]}-${m[1]}`:''}
+function to24Hour(v){if(!v)return '';const s=String(v);if(/^\\d{2}:\\d{2}$/.test(s))return s;const m=s.match(/^(\\d{1,2}):(\\d{2})\\s*(AM|PM)$/i);if(!m)return '';let h=Number(m[1]);if(m[3].toUpperCase()==='PM'&&h<12)h+=12;if(m[3].toUpperCase()==='AM'&&h===12)h=0;return String(h).padStart(2,'0')+':'+m[2]}
+function prettyDate(v){if(!v)return '';const s=String(v);const p=s.split('-');return p.length===3&&p[0].length===4?`${p[2]}-${p[1]}-${p[0]}`:s}
+function prettyTime(v){if(!v)return '';const p=String(v).split(':');if(p.length<2)return String(v);let h=Number(p[0]);const ap=h>=12?'PM':'AM';h=h%12||12;return `${String(h).padStart(2,'0')}:${p[1]} ${ap}`}
+function statusLabel(v){return v==='done'?'Completed':v==='active'?'In Progress':'Pending'}
+function showMessage(msg){const el=$('message');if(!el)return;el.textContent=msg;el.classList.add('show');clearTimeout(showMessage.t);showMessage.t=setTimeout(()=>el.classList.remove('show'),2200)}
+function normalizeNumber(v){return String(v??'').replace(/[^0-9.]/g,'')}
+
+function calculateProgress(){
+  if(!stages.length)return 0;
+  const done=stages.filter(s=>s.status==='done').length;
+  const active=stages.filter(s=>s.status==='active').length;
+  return safeProgress(Math.round(((done+active*0.5)/stages.length)*100));
+}
+function renderStages(){
+  const root=$('steps'); root.innerHTML='';
+  processProgress=calculateProgress();
+  stages.forEach((s,i)=>{
+    const el=document.createElement('div'); el.className=`step ${['done','active','pending'].includes(s.status)?s.status:'pending'}`;
+    const dt=s.date||s.time?escapeHtml(s.date||'')+(s.date&&s.time?'<br>':'')+escapeHtml(s.time||''):'—';
+    el.innerHTML=`<div class="circle">${s.status==='done'?'✓':i+1}</div><div><div class="step-title">${escapeHtml(s.name||`Stage ${i+1}`)}</div><div class="status">${statusLabel(s.status)}</div><small>${dt}</small></div>`;
+    root.appendChild(el);
+  });
+  $('pct').textContent=processProgress+'%'; $('bar').style.width=processProgress+'%';
+}
+function updateDimensionInches(){
+  const w=parseFloat(normalizeNumber($('w')?.value)),h=parseFloat(normalizeNumber($('h')?.value));
+  $('wInch').textContent=Number.isFinite(w)?(w/25.4).toFixed(2)+' in':'—';
+  $('hInch').textContent=Number.isFinite(h)?(h/25.4).toFixed(2)+' in':'—';
+}
+function normalizeColourInk(v){const s=String(v??'').replace(/[^0-9.]/g,'');const n=parseFloat(s);return Number.isFinite(n)?String(n):''}
+
+function renderColours(){
+  const root=$('colourItems'); root.innerHTML='';
+  colours.forEach((c,i)=>{
+    const item=document.createElement('div'); item.className='colour-item'+(c.checked?'':' is-unchecked');
+    const hex=/^#[0-9a-fA-F]{6}$/.test(String(c.hex||''))?c.hex:'#ffffff';
+    item.innerHTML=`<div class="colour-item-top"><input class="colour-check" type="checkbox" aria-label="Use colour" ${c.checked?'checked':''}><button type="button" class="colour-swatch" aria-label="Change colour" style="background:${hex}"></button><input class="colour-picker" type="color" value="${hex}" aria-label="Colour picker"></div><input class="colour-name" type="text" value="${escapeHtml(c.name||'')}" placeholder="Colour name"><div class="colour-ink"><input class="colour-ink-input" type="number" min="0" step="0.01" value="${escapeHtml(c.ink||'')}" placeholder="0" inputmode="decimal"><span>mm</span></div>`;
+    const check=item.querySelector('.colour-check'),swatch=item.querySelector('.colour-swatch'),picker=item.querySelector('.colour-picker'),nameInput=item.querySelector('.colour-name'),inkInput=item.querySelector('.colour-ink-input');
+    check.addEventListener('change',()=>{colours[i].checked=check.checked;item.classList.toggle('is-unchecked',!check.checked)});
+    swatch.addEventListener('click',()=>picker.click());
+    picker.addEventListener('input',()=>{colours[i].hex=picker.value;swatch.style.background=picker.value});
+    nameInput.addEventListener('input',()=>colours[i].name=nameInput.value);
+    inkInput.addEventListener('input',()=>colours[i].ink=normalizeColourInk(inkInput.value));
+    root.appendChild(item);
+  });
+}
+
+function readFinishing(){
+  const selected=[...document.querySelectorAll('[data-finish]:checked')].map(el=>el.dataset.finish);
+  const formType=document.querySelector('input[name="formType"]:checked')?.value||'roll';
+  const direction=document.querySelector('input[name="direction"]:checked')?.value||'clockwise';
+  return {selected,formType,direction};
+}
+function applyFinishing(data){
+  const d=data||{};
+  document.querySelectorAll('[data-finish]').forEach(el=>el.checked=Array.isArray(d.selected)&&d.selected.includes(el.dataset.finish));
+  const ft=document.querySelector(`input[name="formType"][value="${CSS.escape(d.formType||'roll')}"]`); if(ft)ft.checked=true;
+  const dir=document.querySelector(`input[name="direction"][value="${CSS.escape(d.direction||'clockwise')}"]`); if(dir)dir.checked=true;
+}
+
+function getFormSnapshot(){
+  const ids=['formatNo','revDate','submittedOn','submittedBy','submittedFor','ink','time','dye','name','description','w','h','material','qty','productCode','signature','approvalDate','preparedBy','checkedBy','approvedBy'];
+  const data={}; ids.forEach(id=>{const el=$(id);if(el)data[id]=id==='ink'?normalizeNumber(el.value):el.value});
+  data.colours=structuredClone(colours);
+  data.process={stages:structuredClone(stages),progress:processProgress};
+  data.finishing=readFinishing();
+  const art=$('artPreview'); if(art?.src?.startsWith('data:')) data.artwork=art.src;
+  return data;
+}
+function setArtwork(src){
+  const box=$('artBox'),img=$('artPreview');
+  if(src?.startsWith('data:')){img.src=src;box.classList.add('has-image')}else{img.removeAttribute('src');box.classList.remove('has-image')}
+}
+
+let sharedApiAvailable=false;
+function readOrders(){const d=readJson(ORDER_KEY,'[]');return Array.isArray(d)?d:[]}
+function writeOrders(orders){try{localStorage.setItem(ORDER_KEY,JSON.stringify(orders));return true}catch(e){showMessage('Browser storage is full. Delete old orders or use a smaller artwork image.');return false}}
+async function syncSharedOrders(){try{const remote=await ASAPI.listOrders();sharedApiAvailable=true;writeOrders(remote);renderOrderTable();return remote}catch(e){sharedApiAvailable=false;console.warn('Shared API unavailable; using browser cache.',e);return readOrders()}}
+
+function currentOrderId(){return localStorage.getItem(CURRENT_KEY)||''}
+function setCurrentOrderId(id){if(id)localStorage.setItem(CURRENT_KEY,id);else localStorage.removeItem(CURRENT_KEY)}
+function openMakingProcess(id=currentOrderId()){
+  if(!id){showMessage('Load/save an order first, or use Process beside a saved order.');$('orderLedger').scrollIntoView({behavior:'smooth'});return}
+  const order=readOrders().find(o=>o.id===id);
+  if(!order){showMessage('That order is not available. Refresh the order records and try again.');return}
+  setCurrentOrderId(id);
+  location.href='making-process.html?orderId='+encodeURIComponent(id);
+}
+function nextOrderNo(orders){let max=0;orders.forEach(o=>{const m=String(o.orderNo||'').match(/(\\d+)$/);if(m)max=Math.max(max,Number(m[1]))});return 'ORD-'+String(max+1).padStart(4,'0')}
+function formatSavedAt(v){const d=new Date(v);return Number.isNaN(d.getTime())?String(v||''):d.toLocaleString(undefined,{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})}
+function orderStatus(o){const p=o?.data?.process?.progress;return Number.isFinite(Number(p))?safeProgress(p)+'%':'Not started'}
+
+async function saveForm({newOrder=false}={}){
+  try{await artworkReadyPromise}catch(e){return null}
+  // A new order must never inherit another order's production stages.
+  if(newOrder){stages=structuredClone(defaultStages);processProgress=0;renderStages()}
+  const data=getFormSnapshot(); const orders=readOrders(); let id=newOrder?'':currentOrderId(); let target=id?orders.find(o=>o.id===id):null;
+  if(target){target.data=data;target.savedAt=new Date().toISOString()}else{target={id:Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8),orderNo:nextOrderNo(orders),savedAt:new Date().toISOString(),data};orders.unshift(target);id=target.id}
+  if(!writeOrders(orders))return null;
+  setCurrentOrderId(id); localStorage.setItem(FORM_KEY,JSON.stringify(data)); localStorage.setItem(PROCESS_KEY,JSON.stringify(data.process));
+  if(sharedApiAvailable){try{await ASAPI.saveOrder(target);const remote=await ASAPI.listOrders();writeOrders(remote)}catch(e){showMessage('Server save failed: '+e.message);return null}}
+  renderOrderTable(); showMessage((newOrder?'New order saved: ':'Order saved: ')+target.orderNo+(sharedApiAvailable?' (shared)':' (this browser)')); return target
+}
+function applyFormData(d){
+  if(!d||typeof d!=='object')return;
+  const ids=['formatNo','revDate','submittedOn','submittedBy','submittedFor','ink','time','dye','name','description','w','h','material','qty','productCode','signature','approvalDate','preparedBy','checkedBy','approvedBy'];
+  ids.forEach(id=>{const el=$(id);if(el&&d[id]!==undefined)el.value=id==='ink'?normalizeNumber(d[id]):d[id]});
+  if(Array.isArray(d.colours)){colours=d.colours.map((c,i)=>({name:String(c.name??''),hex:/^#[0-9a-fA-F]{6}$/.test(String(c.hex||''))?c.hex:(defaultColours[i]?.hex||'#ffffff'),ink:normalizeColourInk(c.ink),checked:Boolean(c.checked)}));while(colours.length<defaultColours.length)colours.push(structuredClone(defaultColours[colours.length]))}
+  if(d.process?.stages){stages=structuredClone(d.process.stages);processProgress=safeProgress(d.process.progress)}
+  if(d.finishing)applyFinishing(d.finishing);
+  setArtwork(d.artwork||'');
+}
+function loadForm(){
+  const currentId=currentOrderId();
+  const orders=readOrders();
+  const current=orders.find(o=>o.id===currentId);
+  const d=current?.data || readJson(FORM_KEY,'{}') || {};
+  applyFormData(d);
+
+  // Only restore separately saved process data when it actually exists.
+  // Otherwise keep the all-Pending defaults.
+  if(!d.process){
+    const p=readJson(PROCESS_KEY,'null');
+    if(p && Array.isArray(p.stages)){
+      stages=structuredClone(p.stages);
+      processProgress=safeProgress(p.progress);
+    }
+  }
+}
+function loadSavedOrder(id){
+  const o=readOrders().find(x=>x.id===id);if(!o)return;applyFormData(o.data||{});setCurrentOrderId(o.id);
+  localStorage.setItem(FORM_KEY,JSON.stringify(o.data||{}));localStorage.setItem(PROCESS_KEY,JSON.stringify(o.data?.process||{}));
+  updateDimensionInches();renderColours();renderStages();renderOrderTable();window.scrollTo({top:0,behavior:'smooth'});showMessage('Loaded '+o.orderNo+'. Edit it and press Save Order.')
+}
+async function deleteSavedOrder(id){
+  const orders=readOrders(),o=orders.find(x=>x.id===id);if(!o)return;
+  if(!confirm('Delete '+o.orderNo+' permanently?'))return;
+  if(!writeOrders(orders.filter(x=>x.id!==id)))return;
+  if(sharedApiAvailable){try{await ASAPI.deleteOrder(id);writeOrders(await ASAPI.listOrders())}catch(e){showMessage('Server delete failed: '+e.message);return}}
+  if(currentOrderId()===id){setCurrentOrderId('');localStorage.removeItem(FORM_KEY);localStorage.removeItem(PROCESS_KEY)}renderOrderTable();showMessage(o.orderNo+' deleted.')
+}
+async function clearAllOrders(){const orders=readOrders();if(!orders.length){showMessage('There are no saved orders.');return}if(!confirm('Delete all saved orders? This affects every user of the shared system.'))return;if(!writeOrders([]))return;
+  if(sharedApiAvailable){try{await ASAPI.clearOrders();writeOrders(await ASAPI.listOrders())}catch(e){showMessage('Server clear failed: '+e.message);return}}
+  setCurrentOrderId('');localStorage.removeItem(FORM_KEY);localStorage.removeItem(PROCESS_KEY);renderOrderTable();showMessage('All saved orders deleted.')}
+function orderMatches(o,q){if(!q)return true;const d=o.data||{};return [o.orderNo,d.name,d.description,d.productCode,d.material,d.qty,d.submittedBy].join(' ').toLowerCase().includes(q.toLowerCase())}
+function renderOrderTable(){
+  const body=$('orderTableBody'),count=$('orderCount'),search=$('orderSearch');if(!body)return;
+  const orders=readOrders().sort((a,b)=>String(b.savedAt||'').localeCompare(String(a.savedAt||'')));count.textContent=orders.length;
+  const filtered=orders.filter(o=>orderMatches(o,String(search.value||'').trim()));
+  if(!filtered.length){body.innerHTML=`<tr><td colspan="9" class="order-empty">${orders.length?'No matching orders found.':'No saved orders yet. Click “Save Order” to create the first record.'}</td></tr>`;return}
+  body.innerHTML=filtered.map(o=>{const d=o.data||{},size=(d.w||'—')+' × '+(d.h||'—'),safe=escapeHtml(o.id);return `<tr class="${o.id===currentOrderId()?'current':''}"><td><span class="order-no">${escapeHtml(o.orderNo)}</span></td><td>${escapeHtml(formatSavedAt(o.savedAt))}</td><td><span class="order-customer">${escapeHtml(d.name||'—')}</span></td><td>${escapeHtml(d.description||'—')}</td><td>${escapeHtml(d.productCode||'—')}</td><td>${escapeHtml(d.qty||'—')}</td><td>${escapeHtml(size)}</td><td>${escapeHtml(orderStatus(o))}</td><td><div class="order-actions"><button class="order-action" data-action="load" data-id="${safe}">Load</button><button class="order-action" data-action="process" data-id="${safe}">Process</button><button class="order-action" data-action="excel" data-id="${safe}">Excel</button><button class="order-action danger" data-action="delete" data-id="${safe}">Delete</button></div></td></tr>`}).join('')
+}
+function downloadBlob(name,content,mime){const a=document.createElement('a'),url=URL.createObjectURL(new Blob([content],{type:mime}));a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+const exportColumns=['Order No.','Saved','Customer Name','Label Description','Product Code','Qty.','Width (mm)','Height (mm)','Substrate','Ink Consumption (mm)','Submitted By','Submitted For','Time','Dye No.','Prepared By','Checked By','Approved By','Colours','Finishing','Form Type','Direction','Process Progress'];
+function exportRow(o){const d=o.data||{},f=d.finishing||{};return [o.orderNo,formatSavedAt(o.savedAt),d.name,d.description,d.productCode,d.qty,d.w,d.h,d.material,d.ink,d.submittedBy,d.submittedFor,d.time,d.dye,d.preparedBy,d.checkedBy,d.approvedBy,(d.colours||[]).filter(c=>c.checked&&c.name).map(c=>`${c.name} (${c.ink||0} mm)`).join(', '),(f.selected||[]).join(', '),f.formType||'',f.direction||'',orderStatus(o)]}
+function exportCsv(){const orders=readOrders();if(!orders.length){showMessage('No orders to download.');return}const esc=v=>`"${String(v??'').replace(/"/g,'""')}"`;downloadBlob(`production-orders-${new Date().toISOString().slice(0,10)}.csv`,[exportColumns,...orders.map(exportRow)].map(r=>r.map(esc).join(',')).join('\\r\\n'),'text/csv;charset=utf-8')}
+function exportExcel(){const orders=readOrders();if(!orders.length){showMessage('No orders to download.');return}const table=`<html><head><meta charset="UTF-8"></head><body><table border="1">${[exportColumns,...orders.map(exportRow)].map((r,i)=>`<tr>${r.map(v=>i===0?`<th>${escapeHtml(v)}</th>`:`<td>${escapeHtml(v)}</td>`).join('')}</tr>`).join('')}</table></body></html>`;downloadBlob(`production-orders-${new Date().toISOString().slice(0,10)}.xls`,table,'application/vnd.ms-excel;charset=utf-8')}
+
+function compressArtwork(file){
+  return new Promise((resolve,reject)=>{
+    if(!file||!file.type.startsWith('image/'))return reject(new Error('Please upload a valid image file.'));
+    const url=URL.createObjectURL(file),img=new Image();
+    img.onload=()=>{URL.revokeObjectURL(url);const max=1400,scale=Math.min(1,max/Math.max(img.naturalWidth||img.width,img.naturalHeight||img.height)),w=Math.max(1,Math.round((img.naturalWidth||img.width)*scale)),h=Math.max(1,Math.round((img.naturalHeight||img.height)*scale)),canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;const ctx=canvas.getContext('2d');if(!ctx)return reject(new Error('Image processing is not supported in this browser.'));ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';ctx.drawImage(img,0,0,w,h);let data='';try{data=canvas.toDataURL('image/webp',.82)}catch(e){data=canvas.toDataURL('image/jpeg',.82)}if(data.length>4500000)return reject(new Error('Artwork is still too large after compression. Please use a smaller image.'));resolve(data)}
+    img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('Could not load that artwork image.'))};img.src=url
+  })
+}
+function initArtwork(){
+  const box=$('artBox'),zone=$('artUploadZone'),input=$('artFileInput'),preview=$('artPreview');
+  const open=()=>input.click();
+  $('artUploadBtn').addEventListener('click',e=>{e.stopPropagation();open()});$('artChangeBtn').addEventListener('click',open);zone.addEventListener('click',e=>{if(e.target!==$('artUploadBtn'))open()});
+  input.addEventListener('change',()=>{const file=input.files?.[0];if(file){const t=zone.querySelector('.art-upload-title');if(t)t.textContent='Processing artwork…';artworkReadyPromise=compressArtwork(file).then(data=>{setArtwork(data);if(t)t.textContent='Drag & Drop Sticker / Label Artwork';return data}).catch(err=>{if(t)t.textContent='Drag & Drop Sticker / Label Artwork';alert(err.message);throw err})}});
+  ['dragenter','dragover'].forEach(n=>box.addEventListener(n,e=>{e.preventDefault();zone.classList.add('dragover')}));['dragleave','drop'].forEach(n=>box.addEventListener(n,e=>{e.preventDefault();zone.classList.remove('dragover')}));
+  box.addEventListener('drop',e=>{const file=e.dataTransfer?.files?.[0];if(file){const t=zone.querySelector('.art-upload-title');if(t)t.textContent='Processing artwork…';artworkReadyPromise=compressArtwork(file).then(data=>{setArtwork(data);if(t)t.textContent='Drag & Drop Sticker / Label Artwork';return data}).catch(err=>{if(t)t.textContent='Drag & Drop Sticker / Label Artwork';alert(err.message);throw err})}});
+}
+function resetFormToBlank(){
+  setCurrentOrderId('');localStorage.removeItem(FORM_KEY);localStorage.removeItem(PROCESS_KEY);
+  location.reload();
+}
+
+function init(){
+  const now=new Date();['revDate','submittedOn','approvalDate'].forEach(id=>{const el=$(id);if(el&&!el.value)el.valueAsDate=now});
+  loadForm();updateDimensionInches();renderColours();renderStages();renderOrderTable();initArtwork();syncSharedOrders().then(remote=>{const id=currentOrderId();const current=remote.find(o=>o.id===id);if(current){applyFormData(current.data||{});updateDimensionInches();renderColours();renderStages();renderOrderTable()} });
+  ['w','h'].forEach(id=>$(id).addEventListener('input',updateDimensionInches));
+  $('orderSearch').addEventListener('input',renderOrderTable);
+  $('orderTableBody').addEventListener('click',e=>{const b=e.target.closest('[data-action]');if(!b)return;const id=b.dataset.id,action=b.dataset.action;if(action==='load')loadSavedOrder(id);if(action==='process'){openMakingProcess(id);return}if(action==='delete')deleteSavedOrder(id);if(action==='excel'){const o=readOrders().find(x=>x.id===id);if(o){const rows=[exportColumns,exportRow(o)],html=`<html><head><meta charset="UTF-8"></head><body><table border="1">${rows.map((r,i)=>`<tr>${r.map(v=>i===0?`<th>${escapeHtml(v)}</th>`:`<td>${escapeHtml(v)}</td>`).join('')}</tr>`).join('')}</table></body></html>`;downloadBlob((o.orderNo||'order')+'.xls',html,'application/vnd.ms-excel;charset=utf-8')}}});
+  const save=()=>saveForm();const saveNew=()=>saveForm({newOrder:true});
+  $('saveBtn').addEventListener('click',save);$('saveBtnBottom').addEventListener('click',save);$('saveNewBtn').addEventListener('click',saveNew);$('printBtn').addEventListener('click',()=>window.print());$('printBtnBottom').addEventListener('click',()=>window.print());
+  $('homeBtn').addEventListener('click',()=>location.href='index.html');$('processBtn').addEventListener('click',()=>openMakingProcess());$('processEditBtn').addEventListener('click',()=>openMakingProcess());$('recordsBtn').addEventListener('click',()=>$('orderLedger').scrollIntoView({behavior:'smooth'}));
+  $('excelBtn').addEventListener('click',exportExcel);$('csvBtn').addEventListener('click',exportCsv);$('clearBtn').addEventListener('click',clearAllOrders);
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+</script>
+<script>
+// Aart Stroke dynamic API client. Admin token is kept only in this browser session.
+window.AARTSTROKE_API = "https://aartstroke.workers.dev/api";
+window.ASAPI = {
+  async request(path, options={}) {
+    const method = String(options.method || 'GET').toUpperCase();
+    const headers = {'content-type':'application/json', ...(options.headers||{})};
+    if (method !== 'GET') {
+      let token = sessionStorage.getItem('as_admin_token') || '';
+      if (!token) {
+        token = window.prompt('Enter Aart Stroke admin access token to update shared production records') || '';
+        token = token.trim();
+        if (!token) throw new Error('Admin access token is required to update shared records.');
+        sessionStorage.setItem('as_admin_token', token);
+      }
+      headers['x-admin-token'] = token;
+    }
+    let r = await fetch(window.AARTSTROKE_API + path, {...options, method, headers});
+    if (r.status === 401 && method !== 'GET') {
+      sessionStorage.removeItem('as_admin_token');
+      const token = (window.prompt('Admin access token was rejected. Enter the correct token') || '').trim();
+      if (!token) throw new Error('Admin authorization was cancelled.');
+      sessionStorage.setItem('as_admin_token', token);
+      headers['x-admin-token'] = token;
+      r = await fetch(window.AARTSTROKE_API + path, {...options, method, headers});
+    }
+    const data = await r.json().catch(()=>({error:'Invalid server response'}));
+    if (!r.ok || data.ok === false) throw new Error(data.error || `Request failed (${r.status})`);
+    return data;
+  },
+  async listOrders() { return (await this.request('/orders')).orders || []; },
+  async saveOrder(order) { return this.request('/orders', {method:'POST',body:JSON.stringify(order)}); },
+  async deleteOrder(id) { return this.request('/orders/'+encodeURIComponent(id), {method:'DELETE'}); },
+  async clearOrders() { return this.request('/orders', {method:'DELETE'}); }
+};
+</script>
+</body>
+</html>
