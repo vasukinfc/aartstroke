@@ -28,6 +28,17 @@ async function snapshotOrder(db, row) {
   await db.prepare('INSERT OR IGNORE INTO orders_history (order_id,revision,order_no,saved_at,data_json) VALUES (?,?,?,?,?)')
     .bind(row.id,revision,row.orderNo,row.savedAt,row.dataJson).run();
 }
+async function allocateOrderNo(db) {
+  await ensureArchive(db);
+  await db.prepare('CREATE TABLE IF NOT EXISTS order_counters (name TEXT PRIMARY KEY, value INTEGER NOT NULL)').run();
+  await db.prepare(`INSERT OR IGNORE INTO order_counters(name,value)
+    SELECT 'ORD',COALESCE(MAX(CAST(SUBSTR(order_no,5) AS INTEGER)),0)
+    FROM (SELECT order_no FROM orders UNION ALL SELECT order_no FROM orders_trash)
+    WHERE order_no GLOB 'ORD-[0-9]*'`).run();
+  const row=await db.prepare("UPDATE order_counters SET value=value+1 WHERE name='ORD' RETURNING value AS number").first();
+  if(!row||!Number.isSafeInteger(Number(row.number)))throw new Error('Order sequence allocation failed');
+  return 'ORD-'+String(row.number).padStart(4,'0');
+}
 function publicOrder(row) {
   return {id:row.id, orderNo:row.orderNo, savedAt:row.savedAt, data:JSON.parse(row.dataJson)};
 }
@@ -68,6 +79,8 @@ export default {
           if (!Number.isInteger(expected) || expected !== revision)
             return reply({ok:false,error:'This order was updated elsewhere. Reload it before saving again.',code:'REVISION_CONFLICT'},409);
           const data = {...body.data,_revision:revision+1};
+          // Preserve the original order number through all edits and revisions.
+          body.orderNo=existing.orderNo;
           await snapshotOrder(env.DB,existing);
           const result = await env.DB.prepare('UPDATE orders SET order_no=?,saved_at=?,data_json=? WHERE id=? AND data_json=?')
             .bind(body.orderNo.trim(),savedAt,JSON.stringify(data),body.id,existing.dataJson).run();
@@ -76,13 +89,15 @@ export default {
           return reply({ok:true,id:body.id,orderNo:body.orderNo.trim(),savedAt,revision:revision+1});
         }
         const data = {...body.data,_revision:1};
+        // Allocate official order numbers on the database, never in a browser.
         // A previously deleted ID must not silently re-create an archived order.
         await ensureArchive(env.DB);
         const archived = await env.DB.prepare('SELECT id FROM orders_trash WHERE id=?').bind(body.id).first();
         if (archived) return reply({ok:false,error:'Archived order ID cannot be re-used. Restore it from Trash.',code:'ARCHIVED_ID'},409);
+        const officialNo=await allocateOrderNo(env.DB);
         await env.DB.prepare('INSERT INTO orders (id,order_no,saved_at,data_json) VALUES (?,?,?,?)')
-          .bind(body.id,body.orderNo.trim(),savedAt,JSON.stringify(data)).run();
-        return reply({ok:true,id:body.id,orderNo:body.orderNo.trim(),savedAt,revision:1});
+          .bind(body.id,officialNo,savedAt,JSON.stringify(data)).run();
+        return reply({ok:true,id:body.id,orderNo:officialNo,savedAt,revision:1});
       }
       if (path === '/api/orders' && request.method === 'DELETE')
         return reply({ok:false,error:'Bulk deletion is disabled to protect production records.'},403);
