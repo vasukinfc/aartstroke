@@ -99,6 +99,8 @@ export default {
       return reply({ok:false,error:'Authentication required. Enter your authorized access token.'},401);
 
     try {
+      if (path === '/api/session' && request.method === 'GET')
+        return reply({ok:true,authenticated:true,serverVersion:2});
       if (path === '/api/orders' && request.method === 'GET') {
         const limit=Math.min(200,Math.max(1,Number.parseInt(url.searchParams.get('limit')||'100',10)||100));
         const offset=Math.max(0,Math.min(100000,Number.parseInt(url.searchParams.get('offset')||'0',10)||0));
