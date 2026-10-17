@@ -1,0 +1,33 @@
+name: Test and package release ZIP
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - feat/production-safety-dashboard-upgrades-20261017
+permissions:
+  contents: read
+jobs:
+  verify-and-package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Automated test suite
+        run: npm test
+      - name: Package complete source
+        run: |
+          mkdir -p dist/aartstroke-production
+          cp index.html login.html approval.html production-form.html making-process.html api-client.js xlsx-export.js worker.js wrangler.toml package.json README-dynamic.md dist/aartstroke-production/
+          cp -R tests .github dist/aartstroke-production/
+          cd dist
+          zip -qr aartstroke-production-ready.zip aartstroke-production
+          unzip -t aartstroke-production-ready.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: aartstroke-source-zip
+          path: dist/aartstroke-production-ready.zip
+          if-no-files-found: error
+          retention-days: 30
