@@ -425,6 +425,13 @@ body{min-height:100vh}button,input,select{font:inherit}
   }
 }
 
+.history-dialog{width:min(560px,calc(100vw - 24px));border:1px solid #d2dded;border-radius:16px;box-shadow:0 22px 75px #14243c4d;padding:22px;color:#1d2835}
+.history-dialog::backdrop{background:rgba(12,25,45,.56)}
+.history-dialog h3{font-size:21px;margin:0 0 8px}
+.history-dialog p{color:#697584;font-size:13px;line-height:1.6}
+.history-list{display:grid;gap:9px;max-height:50vh;overflow:auto;margin:15px 0}
+.history-row{display:flex;align-items:center;gap:10px;justify-content:space-between;border:1px solid #e3eaf3;border-radius:10px;padding:11px 12px;font-size:12px}
+.history-row strong{display:block;font-size:13px}.history-row span{font-size:11px;color:#6e7c8c;display:block}
 @media screen {
   .btn,.order-action,.process-edit-btn,.art-upload-btn,.art-change-btn{font-size:12px;min-height:36px}
   .field input,.field select,.meta input,.approval-row input,.approval-row select,.approval-signature input,.approval-footer input,.order-search,.colour-name,.colour-ink-input{font-size:13px;min-height:34px}
@@ -576,6 +583,12 @@ body{min-height:100vh}button,input,select{font:inherit}
     </div>
   </div>
 </section>
+<dialog class="history-dialog" id="historyDialog" aria-labelledby="historyHeading">
+ <h3 id="historyHeading">Order revision history</h3>
+ <p>Previous revisions are retained by the database. Restoring a revision creates a new revision; the current version is backed up.</p>
+ <div id="historyList" class="history-list" aria-live="polite"></div>
+ <button class="btn" id="closeHistory" type="button">Close</button>
+</dialog>
 
 <script>
 const ORDER_KEY='production-orders';
@@ -815,13 +828,48 @@ async function deleteSavedOrder(id){
   renderOrderTable();showMessage(o.orderNo+' moved to Trash. Restore it from the dashboard.');
 }
 
+async function openHistory(id){
+  const dialog=$('historyDialog'),root=$('historyList');
+  root.replaceChildren();
+  const status=document.createElement('p');status.textContent='Loading order revisions…';
+  root.appendChild(status);
+  dialog.showModal();
+  try{
+    const result=await ASAPI.listHistory(id);
+    root.replaceChildren();
+    const versions=result.revisions||[];
+    if(!versions.length){
+      const p=document.createElement('p');p.textContent='No previous revisions yet. History begins when an existing order is edited and saved.';root.appendChild(p);return;
+    }
+    for(const v of versions){
+      const row=document.createElement('div');row.className='history-row';
+      const detail=document.createElement('div'),label=document.createElement('strong'),when=document.createElement('span');
+      label.textContent='Revision '+v.revision;when.textContent='Saved '+formatSavedAt(v.savedAt);
+      detail.append(label,when);
+      const restore=document.createElement('button');restore.className='btn';restore.textContent='Restore';
+      restore.addEventListener('click',async()=>{
+        if(!confirm('Restore revision '+v.revision+'? A new revision will be created and current data backed up.'))return;
+        restore.disabled=true;
+        try{
+          await ASAPI.restoreRevision(id,v.revision);
+          await syncSharedOrders();
+          loadSavedOrder(id);
+          dialog.close();
+          showMessage('Revision '+v.revision+' restored as a new order version.');
+        }catch(e){showMessage('Restore failed: '+e.message);restore.disabled=false}
+      });
+      row.append(detail,restore);root.appendChild(row);
+    }
+  }catch(e){status.textContent='Could not load history: '+e.message;root.replaceChildren(status)}
+}
+
 function orderMatches(o,q){if(!q)return true;const d=o.data||{};return [o.orderNo,d.name,d.description,d.productCode,d.material,d.qty,d.submittedBy].join(' ').toLowerCase().includes(q.toLowerCase())}
 function renderOrderTable(){
   const body=$('orderTableBody'),count=$('orderCount'),search=$('orderSearch');if(!body)return;
   const orders=readOrders().sort((a,b)=>String(b.savedAt||'').localeCompare(String(a.savedAt||'')));count.textContent=orders.length;
   const filtered=orders.filter(o=>orderMatches(o,String(search.value||'').trim()));
   if(!filtered.length){body.innerHTML=`<tr><td colspan="9" class="order-empty">${orders.length?'No matching orders found.':'No saved orders yet. Click “Save Order” to create the first record.'}</td></tr>`;return}
-  body.innerHTML=filtered.map(o=>{const d=o.data||{},size=(d.w||'—')+' × '+(d.h||'—'),safe=escapeHtml(o.id);return `<tr class="${o.id===currentOrderId()?'current':''}"><td><span class="order-no">${escapeHtml(o.orderNo)}</span></td><td>${escapeHtml(formatSavedAt(o.savedAt))}</td><td><span class="order-customer">${escapeHtml(d.name||'—')}</span></td><td>${escapeHtml(d.description||'—')}</td><td>${escapeHtml(d.productCode||'—')}</td><td>${escapeHtml(d.qty||'—')}</td><td>${escapeHtml(size)}</td><td>${escapeHtml(orderStatus(o))}</td><td><div class="order-actions"><button class="order-action" data-action="load" data-id="${safe}">Load</button><button class="order-action" data-action="process" data-id="${safe}">Process</button><button class="order-action" data-action="excel" data-id="${safe}">Excel</button><button class="order-action danger" data-action="delete" data-id="${safe}">Delete</button></div></td></tr>`}).join('')
+  body.innerHTML=filtered.map(o=>{const d=o.data||{},size=(d.w||'—')+' × '+(d.h||'—'),safe=escapeHtml(o.id);return `<tr class="${o.id===currentOrderId()?'current':''}"><td><span class="order-no">${escapeHtml(o.orderNo)}</span></td><td>${escapeHtml(formatSavedAt(o.savedAt))}</td><td><span class="order-customer">${escapeHtml(d.name||'—')}</span></td><td>${escapeHtml(d.description||'—')}</td><td>${escapeHtml(d.productCode||'—')}</td><td>${escapeHtml(d.qty||'—')}</td><td>${escapeHtml(size)}</td><td>${escapeHtml(orderStatus(o))}</td><td><div class="order-actions"><button class="order-action" data-action="load" data-id="${safe}">Load</button><button class="order-action" data-action="process" data-id="${safe}">Process</button><button class="order-action" data-action="excel" data-id="${safe}">Excel</button><button class="order-action" data-action="history" data-id="${safe}">History</button><button class="order-action danger" data-action="delete" data-id="${safe}">Delete</button></div></td></tr>`}).join('')
 }
 function downloadBlob(name,content,mime){const a=document.createElement('a'),url=URL.createObjectURL(new Blob([content],{type:mime}));a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
 const exportColumns=['Order No.','Saved','Customer Name','Label Description','Product Code','Qty.','Width (mm)','Height (mm)','Substrate','Ink Consumption (mm)','Submitted By','Submitted For','Time','Dye No.','Prepared By','Checked By','Approved By','Colours','Finishing','Form Type','Direction','Process Progress'];
@@ -885,7 +933,7 @@ function init(){
   });
   ['w','h'].forEach(id=>$(id).addEventListener('input',updateDimensionInches));
   $('orderSearch').addEventListener('input',renderOrderTable);
-  $('orderTableBody').addEventListener('click',e=>{const b=e.target.closest('[data-action]');if(!b)return;const id=b.dataset.id,action=b.dataset.action;if(action==='load')loadSavedOrder(id);if(action==='process'){openMakingProcess(id);return}if(action==='delete')deleteSavedOrder(id);if(action==='excel'){const o=readOrders().find(x=>x.id===id);if(o){ASXLSX.download([exportColumns,exportRow(o)],o.orderNo||'order')}}});
+  $('orderTableBody').addEventListener('click',e=>{const b=e.target.closest('[data-action]');if(!b)return;const id=b.dataset.id,action=b.dataset.action;if(action==='load')loadSavedOrder(id);if(action==='process'){openMakingProcess(id);return}if(action==='delete')deleteSavedOrder(id);if(action==='history'){openHistory(id);return}if(action==='excel'){const o=readOrders().find(x=>x.id===id);if(o){ASXLSX.download([exportColumns,exportRow(o)],o.orderNo||'order')}}});
   const save=()=>saveForm();const saveNew=()=>saveForm({newOrder:true});
   let draftTimer;
   const queueDraft=()=>{
@@ -897,6 +945,7 @@ function init(){
   };
   document.querySelector('.sheet').addEventListener('input',queueDraft);
   document.querySelector('.sheet').addEventListener('change',queueDraft);
+  $('closeHistory').addEventListener('click',()=>$('historyDialog').close());
   $('saveBtn').addEventListener('click',save);$('saveBtnBottom').addEventListener('click',save);$('saveNewBtn').addEventListener('click',saveNew);$('printBtn').addEventListener('click',()=>window.print());$('printBtnBottom').addEventListener('click',()=>window.print());
   $('homeBtn').addEventListener('click',()=>location.href='index.html');$('processBtn').addEventListener('click',()=>openMakingProcess());$('processEditBtn').addEventListener('click',()=>openMakingProcess());$('recordsBtn').addEventListener('click',()=>$('orderLedger').scrollIntoView({behavior:'smooth'}));
   $('excelBtn').addEventListener('click',exportExcel);$('csvBtn').addEventListener('click',exportCsv);$('clearBtn').addEventListener('click',()=>showMessage('Bulk deletion is disabled. Archive one order at a time and restore from Dashboard → Trash.'));
