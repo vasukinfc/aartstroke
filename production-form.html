@@ -714,12 +714,17 @@ async function syncSharedOrders(){
     sharedApiAvailable=true;
     const remoteIds=new Set(remote.map(o=>o.id));
     const localOnly=local.filter(o=>!remoteIds.has(o.id));
-    // Never replace legacy browser records with a remote response before an explicit import.
+    // Archived orders must never reappear from stale browser cache.
+    // Preserve older local-only records separately for controlled migration.
     if(localOnly.length) {
-      try{localStorage.setItem('production-legacy-backup',JSON.stringify(localOnly))}catch(e){}
-      showMessage(localOnly.length+' local-only order(s) preserved. Save each to import into the shared database.');
+      try {
+        const prior=readJson('production-legacy-backup','[]')||[];
+        const merged=new Map([...prior,...localOnly].map(o=>[o.id,o]));
+        localStorage.setItem('production-legacy-backup',JSON.stringify([...merged.values()]));
+      }catch(e){console.warn('Unable to retain additional local-only orders',e)}
+      showMessage(localOnly.length+' local-only record(s) retained separately. They were not mixed with live shared orders.');
     }
-    writeOrders([...remote,...localOnly]);renderOrderTable();
+    writeOrders(remote);renderOrderTable();
     return remote;
   }catch(e){
     sharedApiAvailable=false;
