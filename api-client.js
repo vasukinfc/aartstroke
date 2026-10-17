@@ -50,6 +50,10 @@
       return request('/orders',{method:'POST',body:JSON.stringify({...order,expectedRevision:Number(order.data?._revision||0)})});
     },
     deleteOrder(id) { return request('/orders/'+encodeURIComponent(id),{method:'DELETE'}); },
+    listHistory(id) { return request('/orders/'+encodeURIComponent(id)+'/history'); },
+    restoreRevision(id,revision) {
+      return request('/orders/'+encodeURIComponent(id)+'/revisions/'+encodeURIComponent(revision)+'/restore',{method:'POST'});
+    },
     listTrash() { return request('/trash').then(r=>r.orders||[]); },
     restoreOrder(id) { return request('/orders/'+encodeURIComponent(id)+'/restore',{method:'POST'}); },
     async uploadArtwork(file,orderId) {
