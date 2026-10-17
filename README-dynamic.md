@@ -111,3 +111,31 @@ From an authorized environment, verify all of the following:
 - Keep all existing D1 records and original artwork safe; take backups before mutations.
 - Validate the new Worker against a test/staging D1 database before live deployment.
 - Never auto-merge/auto-deploy code that changes database security or writes.
+
+
+## October 17 release candidate — additional working features
+- `login.html` provides a dedicated workspace sign-in. The access key must match the Cloudflare Worker `ADMIN_TOKEN` secret. This is **not** a multi-user identity/roles system. Every authorized staff member currently has the same access level.
+- Worker allocates unique `ORD-0001`-style numbers atomically in D1 via the `order_counters` table; existing historic order numbers remain unchanged.
+- Orders paginate in the API and client, up to the configured client cap of 10,000 orders.
+- Deleting an order moves it to Trash. Browser-only legacy records are saved separately as `production-legacy-backup` and are not silently reintroduced into the live order list.
+- `approval.html` lets customers review a specific proof revision and approve/request changes through a **single-use 64-digit token**. An authenticated staff user clicks **Customer Approval Link** on a saved order to generate a proof link valid for 3 days. Token hashes are stored in D1; the raw token is not stored in the database. Admins can see approval status in the production form. This is a proof of decision from possession of a private link and a typed name; it is **not** a legally certified digital signature or separate identity verification.
+- Originals stored in R2 can be downloaded by authorized staff using the **Download Original Artwork** button. The visible artwork backup warning remains until an original is uploaded.
+- GitHub Actions `Test and package release ZIP` creates a complete source-code ZIP artifact only after automated tests pass.
+
+### First-run deployment checklist
+
+1. Secure a verified D1 export/backup before modifying the existing Cloudflare Worker.
+2. Configure `ADMIN_TOKEN` as a Worker secret, without placing it in GitHub, and choose who is authorized to know it.
+3. Create the R2 bucket `aartstroke-artworks`, add the `ARTWORKS` binding as documented above, and confirm upload **and download** using one non-sensitive sample original.
+4. Confirm the existing `DB` D1 binding is the intended production database; no copy/migration into an empty database should silently replace existing data.
+5. Deploy Worker code first in a **staging environment with a copied test D1 database**. Check order reads, writes, revision conflict, archive/restore, authenticated R2, and public single-use approval links.
+6. Deploy the production Worker and the GitHub Pages HTML as one coordinated release; the new sign-in requires authenticated `GET /api/orders`.
+7. Test A4 print with a real sample label, desktop Excel opening a new `.xlsx`, mobile screens, and offline/server outage recoverability.
+8. Keep automated tests green and monitor Worker logs after release.
+
+### Security and deployment notes
+
+- Customer approval token URLs are capability links. Anyone holding an unexpired link may act for that specific revision once; share only with the intended customer using a secure channel. If a link leaks, create a new artwork revision to invalidate previous links. Configurable revoke endpoints remain future work.
+- This is a single-tenant administrative product with a shared staff access key. Organization-scale usage requires individual accounts/roles and better account recovery.
+- R2 provisioning, D1 backup operations, DNS/routes, Worker secrets, Cloudflare Access, production release coordination, and real hardware printing require an authorized Cloudflare environment. CI passing does not provision those services.
+- No automatic production deployment is performed by these commits. The GitHub branch/PR can be reviewed, and the release ZIP contains code/config only (no databases, customer records or secrets).
