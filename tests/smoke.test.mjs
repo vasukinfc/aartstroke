@@ -7,7 +7,7 @@ import worker from '../worker.js';
 function dbMock(){
  const orders=new Map(),archive=new Map();
  function query(sql,values){
-  const q=sql.replace(/\\s+/g,' ').toUpperCase();
+  const q=sql.replace(/\s+/g,' ').toUpperCase();
   const order=orders.get(values[0]),old=archive.get(values[0]);
   if(q.startsWith('SELECT DATA_JSON AS DATAJSON FROM ORDERS'))return {dataJson:order?.data_json};
   if(q.startsWith('SELECT ID FROM ORDERS_TRASH'))return old?{id:old.id}:null;
@@ -27,7 +27,7 @@ function dbMock(){
       return {results:rows.map(o=>({id:o.id,orderNo:o.order_no,savedAt:o.saved_at,dataJson:o.data_json,deletedAt:o.deleted_at}))};
     },
     async run(){
-      const q=sql.replace(/\\s+/g,' ').toUpperCase();
+      const q=sql.replace(/\s+/g,' ').toUpperCase();
       if(q.startsWith('CREATE TABLE'))return {meta:{changes:0}};
       if(q.startsWith('INSERT INTO ORDERS_TRASH')){
        const [id,order_no,saved_at,data_json,deleted_at]=values;
@@ -64,7 +64,7 @@ test('JS source and embedded HTML scripts parse without syntax errors',()=>{
  for(const file of ['api-client.js','xlsx-export.js','worker.js'])new vm.Script(file==='worker.js'?fs.readFileSync(file,'utf8').replace('export default','const exported ='):fs.readFileSync(file,'utf8'),{filename:file});
  for(const file of ['index.html','production-form.html','making-process.html']){
   const src=fs.readFileSync(file,'utf8');
-  for(const [,script] of src.matchAll(/<script\\b[^>]*>([\\s\\S]*?)<\\/script>/g)){
+  for(const [,script] of src.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)){
    if(script.trim())new vm.Script(script,{filename:file});
   }
  }
