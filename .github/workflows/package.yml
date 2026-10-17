@@ -20,7 +20,7 @@ jobs:
       - name: Package complete source
         run: |
           mkdir -p dist/aartstroke-production
-          cp index.html login.html production-form.html making-process.html api-client.js xlsx-export.js worker.js wrangler.toml package.json README-dynamic.md dist/aartstroke-production/
+          cp index.html login.html approval.html production-form.html making-process.html api-client.js xlsx-export.js worker.js wrangler.toml package.json README-dynamic.md dist/aartstroke-production/
           cp -R tests .github dist/aartstroke-production/
           cd dist
           zip -qr aartstroke-production-ready.zip aartstroke-production
