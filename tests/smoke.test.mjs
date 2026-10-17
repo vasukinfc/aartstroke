@@ -10,7 +10,7 @@ function dbMock(){
   const q=sql.replace(/\s+/g,' ').toUpperCase();
   const order=orders.get(values[0]),old=archive.get(values[0]);
   if(q.startsWith('SELECT DATA_JSON AS DATAJSON FROM ORDERS'))return order?{dataJson:order.data_json}:null;
-  if(q.startsWith('SELECT ID, ORDER_NO AS ORDERNO, SAVED_AT AS SAVEDAT, DATA_JSON AS DATAJSON FROM ORDERS'))return order?{id:order.id,orderNo:order.order_no,savedAt:order.saved_at,dataJson:order.data_json}:null;
+  if(q.startsWith('SELECT ID, ORDER_NO AS ORDERNO') || q.startsWith('SELECT ID,ORDER_NO AS ORDERNO'))return order?{id:order.id,orderNo:order.order_no,savedAt:order.saved_at,dataJson:order.data_json}:null;
   if(q.startsWith('SELECT ORDER_NO AS ORDERNO,DATA_JSON AS DATAJSON FROM ORDERS_HISTORY')){
     const row=history.get(values[0]+':'+values[1]);return row?{orderNo:row.order_no,dataJson:row.data_json}:null;
   }
