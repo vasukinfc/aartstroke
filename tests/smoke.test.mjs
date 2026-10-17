@@ -36,7 +36,7 @@ function dbMock(){
       const rows=sql.includes('FROM order_approvals')?[...approvals.values()].filter(a=>a.order_id===values[0]).map(a=>({...a,createdAt:a.created_at,expiresAt:a.expires_at,respondedAt:a.responded_at})) :
                  sql.includes('FROM orders_history')?[...history.values()].filter(r=>r.order_id===values[0]):
                  sql.includes('FROM orders_trash')?[...archive.values()]:[...orders.values()];
-      return {results:rows.map(o=>({id:o.id,orderNo:o.order_no,savedAt:o.saved_at,dataJson:o.data_json,deletedAt:o.deleted_at,revision:o.revision}))};
+      return {results:rows.map(o=>({id:o.id,orderNo:o.order_no,savedAt:o.saved_at,dataJson:o.data_json,deletedAt:o.deleted_at,revision:o.revision,status:o.status,reviewer:o.reviewer,note:o.note}))};
     },
     async run(){
       const q=sql.replace(/\s+/g,' ').toUpperCase();
