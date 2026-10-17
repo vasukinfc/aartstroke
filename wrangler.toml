@@ -6,3 +6,9 @@ compatibility_date = "2026-10-15"
 binding = "DB"
 database_name = "aartstroke-production"
 database_id = "fb63166b-ce3e-4363-8852-0a5f9f735839"
+
+# Create this private bucket in Cloudflare R2 before Worker deployment.
+# The Worker will fail deployment until the bucket exists.
+[[r2_buckets]]
+binding = "ARTWORKS"
+bucket_name = "aartstroke-artworks"
