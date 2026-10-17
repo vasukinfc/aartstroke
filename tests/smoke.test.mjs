@@ -5,11 +5,15 @@ import vm from 'node:vm';
 import worker from '../worker.js';
 
 function dbMock(){
- const orders=new Map(),archive=new Map();
+ const orders=new Map(),archive=new Map(),history=new Map();
  function query(sql,values){
   const q=sql.replace(/\s+/g,' ').toUpperCase();
   const order=orders.get(values[0]),old=archive.get(values[0]);
   if(q.startsWith('SELECT DATA_JSON AS DATAJSON FROM ORDERS'))return order?{dataJson:order.data_json}:null;
+  if(q.startsWith('SELECT ID, ORDER_NO AS ORDERNO, SAVED_AT AS SAVEDAT, DATA_JSON AS DATAJSON FROM ORDERS'))return order?{id:order.id,orderNo:order.order_no,savedAt:order.saved_at,dataJson:order.data_json}:null;
+  if(q.startsWith('SELECT ORDER_NO AS ORDERNO,DATA_JSON AS DATAJSON FROM ORDERS_HISTORY')){
+    const row=history.get(values[0]+':'+values[1]);return row?{orderNo:row.order_no,dataJson:row.data_json}:null;
+  }
   if(q.startsWith('SELECT ID FROM ORDERS_TRASH'))return old?{id:old.id}:null;
   if(q.startsWith('SELECT ID FROM ORDERS WHERE'))return order?{id:order.id}:null;
   if(q.startsWith('SELECT * FROM ORDERS_TRASH'))return old||null;
@@ -23,12 +27,18 @@ function dbMock(){
     bind(...v){values=v;return self;},
     async first(){return query(sql,values)||null;},
     async all(){
-      const rows=sql.includes('FROM orders_trash')?[...archive.values()]:[...orders.values()];
-      return {results:rows.map(o=>({id:o.id,orderNo:o.order_no,savedAt:o.saved_at,dataJson:o.data_json,deletedAt:o.deleted_at}))};
+      const rows=sql.includes('FROM orders_history')?[...history.values()].filter(r=>r.order_id===values[0]):
+                 sql.includes('FROM orders_trash')?[...archive.values()]:[...orders.values()];
+      return {results:rows.map(o=>({id:o.id,orderNo:o.order_no,savedAt:o.saved_at,dataJson:o.data_json,deletedAt:o.deleted_at,revision:o.revision}))};
     },
     async run(){
       const q=sql.replace(/\s+/g,' ').toUpperCase();
       if(q.startsWith('CREATE TABLE'))return {meta:{changes:0}};
+      if(q.startsWith('INSERT OR IGNORE INTO ORDERS_HISTORY')){
+       const [order_id,revision,order_no,saved_at,data_json]=values;
+       history.set(order_id+':'+revision,{order_id,revision,order_no,saved_at,data_json});
+       return {meta:{changes:1}};
+      }
       if(q.startsWith('INSERT INTO ORDERS_TRASH')){
        const [id,order_no,saved_at,data_json,deleted_at]=values;
        archive.set(id,{id,order_no,saved_at,data_json,deleted_at});return {meta:{changes:1}};
@@ -85,8 +95,16 @@ test('order save, revision conflict, Trash and Restore protect data',async()=>{
  const list=await call(db,'/api/orders');assert.equal(list.body.orders.length,1);
  const updated=await call(db,'/api/orders','POST',{...body,data:{...body.data,_revision:1,name:'New name'}});
  assert.equal(updated.body.revision,2);
+ const hist=await call(db,'/api/orders/order-1/history');
+ assert.equal(hist.body.revisions.length,1);
+ assert.equal(hist.body.revisions[0].revision,1);
  const conflict=await call(db,'/api/orders','POST',{...body,data:{...body.data,_revision:1}});
  assert.equal(conflict.response.status,409);
+ const previous=await call(db,'/api/orders/order-1/revisions/1/restore','POST');
+ assert.equal(previous.response.status,200);
+ assert.equal(previous.body.revision,3);
+ const verifyRestore=await call(db,'/api/orders');
+ assert.equal(verifyRestore.body.orders[0].data.name,'Test print');
  const bulk=await call(db,'/api/orders','DELETE');assert.equal(bulk.response.status,403);
  const archived=await call(db,'/api/orders/order-1','DELETE');assert.equal(archived.body.archived,true);
  const empty=await call(db,'/api/orders');assert.equal(empty.body.orders.length,0);
@@ -94,7 +112,7 @@ test('order save, revision conflict, Trash and Restore protect data',async()=>{
  const restored=await call(db,'/api/orders/order-1/restore','POST');
  assert.equal(restored.body.ok,true);
  const final=await call(db,'/api/orders');
- assert.equal(final.body.orders.length,1);assert.equal(final.body.orders[0].data.name,'New name');
+ assert.equal(final.body.orders.length,1);assert.equal(final.body.orders[0].data.name,'Test print');
 });
 test('original artwork upload requires configured R2 storage',async()=>{
  const db=dbMock(),res=await call(db,'/api/artwork','POST',null,'secret',{'content-type':'image/png','x-order-id':'unassigned'});
