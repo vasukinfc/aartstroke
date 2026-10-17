@@ -52,7 +52,18 @@
       ['production-orders','production-current-order','production-form','production-process'].forEach(k=>localStorage.removeItem(k));
       location.assign('login.html');
     },
-    listOrders() { return request('/orders').then(r => r.orders || []); },
+    async listOrders() {
+      const all=[];let offset=0;
+      for(let page=0;page<100;page++){
+        const result=await request('/orders?limit=100&offset='+offset);
+        const items=result.orders||[];
+        all.push(...items);
+        if(result.nextOffset==null)return all;
+        if(Number(result.nextOffset)<=offset)throw new Error('Invalid pagination cursor from server');
+        offset=Number(result.nextOffset);
+      }
+      throw new Error('Order list exceeds the supported 10,000 records. Contact administrator for archiving.');
+    },
     saveOrder(order) {
       return request('/orders',{method:'POST',body:JSON.stringify({...order,expectedRevision:Number(order.data?._revision||0)})});
     },
