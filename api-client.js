@@ -1,7 +1,7 @@
 /* Aart Stroke API client. Authorization is only kept for the active browser tab. */
 (function() {
   'use strict';
-  const ROOT = 'https://aartstroke.workers.dev/api';
+  const ROOT = 'https://aartstroke.vasukinfc.workers.dev/api';
   const KEY = 'as_admin_token';
   window.AARTSTROKE_API = ROOT;
   function toLogin() {
