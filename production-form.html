@@ -452,6 +452,7 @@ body{min-height:100vh}button,input,select{font:inherit}
   <button class="btn" id="saveNewBtn" type="button">＋ Save as New</button>
   <button class="btn" id="recordsBtn" type="button">▤ Order Records</button>
   <button class="btn" id="processBtn" type="button">⚙ Making Process</button>
+  <button class="btn" id="approvalLinkBtn" type="button">↗ Customer Approval Link</button>
   <button class="btn primary" id="printBtn" type="button">▣ Print Form</button>
 </div>
 
@@ -500,6 +501,7 @@ body{min-height:100vh}button,input,select{font:inherit}
     <button type="button" class="art-change-btn" id="artChangeBtn">Change Artwork</button>
   </div>
   <p id="artworkStorageStatus" class="artwork-storage-status" role="status">Original artwork backup not verified. Preview images are not print masters.</p>
+  <button type="button" class="btn" id="downloadOriginalBtn" hidden>⇩ Download Original Artwork</button>
 </section>
 
 <section class="process">
@@ -513,6 +515,7 @@ body{min-height:100vh}button,input,select{font:inherit}
 
 <section class="approval">
   <div class="approval-title">FOR APPROVAL</div>
+  <div id="approvalStatus" class="artwork-storage-status">No verified customer approval linked to the current saved revision.</div>
   <div class="approval-body">
     <div class="approval-left">
       <div class="approval-row"><span>Customer Name</span><b>:</b><input id="name" placeholder="Enter customer name"></div>
@@ -785,6 +788,7 @@ async function saveForm({newOrder=false}={}){
     try{localStorage.setItem(PROCESS_KEY,JSON.stringify(data.process))}catch(e){}
     try{localStorage.removeItem('production-unsynced-draft')}catch(e){}
     renderOrderTable();
+    showApprovalStatus(target.id);
     showMessage((newOrder?'New order saved: ':'Order saved: ')+target.orderNo+' (shared database)');
     return target;
   }catch(e){
@@ -801,6 +805,7 @@ function applyFormData(d){
   if(d.finishing)applyFinishing(d.finishing);
   setArtwork(d.artwork||'');
   artworkOriginal=d.originalArtwork||null;
+  $('downloadOriginalBtn').hidden=!artworkOriginal?.key;
   showOriginalStatus(artworkOriginal?'Original artwork is referenced in private storage.':'No original artwork is linked to this record. Only a compressed preview may exist.',!!artworkOriginal);
 }
 function loadForm(){
@@ -824,7 +829,7 @@ function loadForm(){
 function loadSavedOrder(id){
   const o=readOrders().find(x=>x.id===id);if(!o)return;applyFormData(o.data||{});setCurrentOrderId(o.id);
   localStorage.setItem(FORM_KEY,JSON.stringify(o.data||{}));localStorage.setItem(PROCESS_KEY,JSON.stringify(o.data?.process||{}));
-  updateDimensionInches();renderColours();renderStages();renderOrderTable();window.scrollTo({top:0,behavior:'smooth'});showMessage('Loaded '+o.orderNo+'. Edit it and press Save Order.')
+  updateDimensionInches();renderColours();renderStages();renderOrderTable();showApprovalStatus(o.id);window.scrollTo({top:0,behavior:'smooth'});showMessage('Loaded '+o.orderNo+'. Edit it and press Save Order.')
 }
 async function deleteSavedOrder(id){
   const orders=readOrders(),o=orders.find(x=>x.id===id);if(!o)return;
@@ -902,10 +907,46 @@ function showOriginalStatus(message,ok=false){
   const el=$('artworkStorageStatus');
   if(el){el.textContent=message;el.classList.toggle('ok',!!ok)}
 }
+async function showApprovalStatus(id){
+  const label=$('approvalStatus');
+  if(!id || !sharedApiAvailable){
+    label.textContent='Save to the shared database before generating a customer approval link.';
+    label.classList.remove('ok');
+    return;
+  }
+  try {
+    const result=await ASAPI.listApprovals(id);
+    const currentRevision=readOrders().find(o=>o.id===id)?.data?._revision ?? 0;
+    const latest=(result.approvals||[]).find(a=>Number(a.revision)===Number(currentRevision));
+    label.textContent=latest
+      ? 'Current revision approval: '+String(latest.status).replaceAll('_',' ')+(latest.reviewer?' · '+latest.reviewer:'')
+      : 'Current revision is not yet approved.';
+    label.classList.toggle('ok',latest?.status==='approved');
+  }catch(e){
+    label.textContent='Customer approval status unavailable: '+e.message;label.classList.remove('ok');
+  }
+}
+async function generateApprovalLink(){
+  const id=currentOrderId();
+  if(!id || !sharedApiAvailable){showMessage('Save this order to the connected server before requesting customer approval.');return}
+  try {
+    const result=await ASAPI.createApprovalLink(id);
+    const address=result.approvalUrl;
+    if(navigator.clipboard?.writeText){
+      await navigator.clipboard.writeText(address);
+      showMessage('Secure customer approval link copied. Expires in 3 days.');
+    }else{
+      window.prompt('Copy customer approval link:',address);
+      showMessage('Customer approval link generated. Expires in 3 days.');
+    }
+    await showApprovalStatus(id);
+  }catch(e){showMessage('Cannot create approval link: '+e.message)}
+}
 async function prepareArtwork(file){
   const data=await compressArtwork(file);
   setArtwork(data);
   artworkOriginal=null;
+  $('downloadOriginalBtn').hidden=true;
   showOriginalStatus('Uploading original artwork to protected storage…');
   if(!sharedApiAvailable){
     showOriginalStatus('Original NOT backed up: shared database connection unavailable. This is only a compressed preview.');
@@ -963,6 +1004,12 @@ function init(){
   document.querySelector('.sheet').addEventListener('input',queueDraft);
   document.querySelector('.sheet').addEventListener('change',queueDraft);
   $('closeHistory').addEventListener('click',()=>$('historyDialog').close());
+  $('approvalLinkBtn').addEventListener('click',generateApprovalLink);
+  $('downloadOriginalBtn').addEventListener('click',async()=>{
+    if(!artworkOriginal?.key)return;
+    try{await ASAPI.downloadArtwork(artworkOriginal.key,artworkOriginal.name)}
+    catch(e){showMessage('Original artwork download failed: '+e.message)}
+  });
   $('saveBtn').addEventListener('click',save);$('saveBtnBottom').addEventListener('click',save);$('saveNewBtn').addEventListener('click',saveNew);$('printBtn').addEventListener('click',()=>window.print());$('printBtnBottom').addEventListener('click',()=>window.print());
   $('homeBtn').addEventListener('click',()=>location.href='index.html');$('processBtn').addEventListener('click',()=>openMakingProcess());$('processEditBtn').addEventListener('click',()=>openMakingProcess());$('recordsBtn').addEventListener('click',()=>$('orderLedger').scrollIntoView({behavior:'smooth'}));
   $('excelBtn').addEventListener('click',exportExcel);$('csvBtn').addEventListener('click',exportCsv);$('clearBtn').addEventListener('click',()=>showMessage('Bulk deletion is disabled. Archive one order at a time and restore from Dashboard → Trash.'));
