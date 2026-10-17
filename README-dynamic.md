@@ -7,9 +7,9 @@ AART STROKE is a labels & packaging production application with three public sta
 ## What is included
 - New responsive dashboard, order search/filter, production summary and archived order restore.
 - Existing printable approval form retained; validations, revision-aware shared saves, draft cache, safer archive and genuine .xlsx export.
-- Making Process editor now supports an assigned employee and stage remarks.
+- Making Process editor now supports an assigned employee, due date, overdue indication and stage remarks.
 - API reads and writes now require an authorization token; DELETE /api/orders (all) is blocked.
-- Cloudflare D1 keeps active orders and automatically creates a `orders_trash` table on archive/restore.
+- Cloudflare D1 keeps active orders and automatically creates `orders_trash` on archive/restore and `orders_history` on edits and history queries. Historical revisions can be restored without destroying the latest version.
 - Optional private Cloudflare R2 originals: `POST /api/artwork` saves original bytes, `GET /api/artwork/<id>/<file>` retrieves them after authentication. The form keeps compressed preview data for print layout and reports whenever original storage is unavailable.
 - Node built-in tests and GitHub Actions check workflow.
 
@@ -85,7 +85,7 @@ From an authorized environment, verify all of the following:
 - Unauthenticated `GET /api/orders` returns HTTP 401.
 - Authorized `GET /api/orders` loads existing records without modifying them.
 - Creating one TEST order, editing it, and updating a Making Process stage works.
-- Editing stale revisions returns HTTP 409; newer data is not overwritten.
+- Editing stale revisions returns HTTP 409; newer data is not overwritten. Check History → Restore on a TEST order and verify a new revision is created.
 - Archive a TEST order, locate it in Trash, restore it, and verify its contents.
 - Bulk `DELETE /api/orders` returns HTTP 403 even for an authorized user.
 - Upload an original artwork and confirm R2 returns its key (only if R2 is enabled); print preview keeps correct fit.
@@ -103,7 +103,7 @@ From an authorized environment, verify all of the following:
 - **Original artwork:** R2 bucket/binding is not yet configured. PDF, SVG conversion and print preflight require enhancement.
 - **Browser local history:** Legacy local-only orders require a one-time migration and reconciliation. The browser cache is not a reliable long-term backup.
 - **Large datasets:** The dashboard has a 100-row display limit and the Worker currently returns up to 1000 active records per request. Pagination, server-side search, and artwork separation are needed before very large adoption.
-- **Advanced operations:** Job QR cards, customer portal, revision approval, SMS/WhatsApp alerts, weighted process metrics, due date alerts, production audit timelines and analytics remain future scope.
+- **Advanced operations:** Job QR cards, customer portal, verifiable revision approval, SMS/WhatsApp alerts, weighted process metrics, production audit timelines and advanced analytics remain future scope. Basic per-stage due dates and dashboard overdue counts are implemented.
 
 ## Release policy
 
