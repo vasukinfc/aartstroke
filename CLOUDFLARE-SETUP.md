@@ -22,17 +22,9 @@ In Cloudflare, open **Storage & databases → D1** and look for `aartstroke-prod
 - **If it does not exist:** create a D1 database called `aartstroke-production`. Copy the new database ID from the dashboard into the `database_id` field in `wrangler.toml`. The ID in the repository is from the original project configuration; it must not be assumed to be valid in a different account.
 - If your customer-data backup is from another database, only import it after reviewing the contents and preparing a restore procedure. **Do not overwrite real records with a blank schema.**
 
-## 2. Create the private artwork bucket
+## 2. R2 is OPTIONAL (skipped for now)
 
-In Cloudflare, open **Storage & databases → R2 Object Storage**, create the private bucket `aartstroke-artworks`. If it already exists in this account, reuse it. Do not enable a public bucket URL.
-
-The repository's `wrangler.toml` includes:
-
-```toml
-[[r2_buckets]]
-binding = "ARTWORKS"
-bucket_name = "aartstroke-artworks"
-```
+**No R2 purchase, bucket, or R2 binding is needed for the current D1-only deployment.** The repo's `wrangler.toml` deliberately includes only `DB`. Uploading artwork still produces a compressed preview inside the D1 order record, but **the lossless original file is not backed up**. Keep print-ready customer originals in your own secure offline backups. Later, when R2 is enabled, add an `ARTWORKS` binding and retest uploads/downloads. Do not rely on compressed previews as print masters.
 
 ## 3. Deploy the Worker from the website ZIP
 
@@ -78,12 +70,12 @@ The sign-in page checks the Worker session endpoint with this key. The current w
 1. Open <https://aartstroke.vasukinfc.workers.dev/api/health> and verify JSON with `ok: true` and `database: true`.
 2. Open <https://aartstroke.vasukinfc.workers.dev/api/session> in an ordinary browser tab. It should respond with HTTP 401 without an access key. That is expected: the API is protected.
 3. Open <https://vasukinfc.github.io/aartstroke/> and sign in with your newly configured private key.
-4. Create **one TEST order**; verify that Save Order succeeds. Upload a sample original artwork, download it, test XLSX, archive/restore and approval link.
+4. Create **one TEST order**; verify that Save Order succeeds. Upload a sample image and confirm its compressed preview is attached to the order. The form should explicitly warn that the **original file is not backed up**. Test XLSX, archive/restore and approval link.
 5. Verify the correct customer orders from your old backups or existing D1 database. Never assume a green GitHub Pages build means backend data has been restored.
 
 ## If you want to do setup entirely through the Cloudflare dashboard
 
-You can create R2 and D1 using the dashboard, but the actual Worker script `worker.js`, its API secret and both bindings still need to be deployed correctly. The `wrangler deploy` route above is the simplest repeatable deployment using this source repository.
+You have already created D1 and its tables. Without using PowerShell, go to **Compute → Workers & Pages → Create application**, create the Worker `aartstroke`, open **Edit code**, replace the placeholder with the entire repository's `worker.js`, and **Deploy**. Open the Worker **Bindings** tab and add **D1 database**: variable name `DB`, database `aartstroke-production`. Under **Settings → Variables and Secrets**, add `ADMIN_TOKEN` with **Secret** type and a private unique password, then **Deploy**. D1 binding and secret are required; R2 is not. The Wrangler route above is preferable for repeatable deployments.
 
 ## Troubleshooting
 
@@ -92,5 +84,5 @@ You can create R2 and D1 using the dashboard, but the actual Worker script `work
 - **Worker not updated yet (404 on `/api/session`):** deploy this repository's latest `worker.js` rather than trying random keys.
 - **Database not configured:** check D1 database ID and `DB` binding in `wrangler.toml`.
 - **Cannot store original artwork:** check R2 bucket name `aartstroke-artworks` and `ARTWORKS` binding.
-- **Failed deployment due to missing R2:** create the bucket first.
+- **No R2 plan:** use the current D1-only `wrangler.toml`; do not add any `r2_buckets` entries. You can save previews but not original print files.
 - **Login page loads but signing in fails:** check the developer console/network response for the `/api/session` call. Login is only usable once the Worker code, D1 binding and secret are set up.
