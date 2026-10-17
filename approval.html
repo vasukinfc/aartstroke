@@ -49,7 +49,7 @@ label{font-size:12px;font-weight:750;display:block;margin:16px 0 6px}input,texta
 <script>
 (function(){
 'use strict';
-const root='https://aartstroke.workers.dev/api',token=new URLSearchParams(location.search).get('token')||'';
+const root='https://aartstroke.vasukinfc.workers.dev/api',token=new URLSearchParams(location.search).get('token')||'';
 const id=n=>document.getElementById(n),message=id('message'),buttons=[id('changes'),id('approve')];
 const url=root+'/approval/'+encodeURIComponent(token);
 function show(t,good=false){message.textContent=t;message.classList.toggle('good',good);message.hidden=false}
