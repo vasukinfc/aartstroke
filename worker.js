@@ -5,7 +5,7 @@ function corsHeaders(request, env) {
   return {
     'Access-Control-Allow-Origin': allowed.includes(origin) ? origin : BASE_ORIGIN,
     'Access-Control-Allow-Methods': 'GET,POST,DELETE,OPTIONS',
-    'Access-Control-Allow-Headers': 'content-type,x-admin-token',
+    'Access-Control-Allow-Headers': 'content-type,x-admin-token,x-order-id',
     'Access-Control-Max-Age': '600',
     'Vary': 'Origin'
   };
