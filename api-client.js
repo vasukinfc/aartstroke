@@ -4,47 +4,54 @@
   const ROOT = 'https://aartstroke.workers.dev/api';
   const KEY = 'as_admin_token';
   window.AARTSTROKE_API = ROOT;
-  function askToken(reason) {
-    const entered = window.prompt(reason || 'Enter Aart Stroke authorized access token');
-    if (!entered || !entered.trim()) throw new Error('Authentication cancelled. Shared records were not loaded.');
-    sessionStorage.setItem(KEY, entered.trim());
-    return entered.trim();
+  function toLogin() {
+    const next = location.pathname.split('/').pop() + location.search;
+    if (location.pathname.endsWith('/login.html')) return;
+    location.assign('login.html?next=' + encodeURIComponent(next || 'index.html'));
   }
   async function request(path, options = {}) {
     const method = String(options.method || 'GET').toUpperCase();
-    let token = sessionStorage.getItem(KEY) || askToken();
-    for (let attempt = 0; attempt < 2; attempt++) {
-      const ctrl = new AbortController();
-      const timeout = setTimeout(() => ctrl.abort(), 20000);
-      let response;
-      try {
-        response = await fetch(ROOT + path, {
-          ...options, method, signal:ctrl.signal,
-          headers: {...(options.headers || {}), 'x-admin-token':token,
-            ...(options.body && typeof options.body === 'string' ? {'content-type':'application/json'} : {})}
-        });
-      } catch(e) {
-        throw new Error(e.name === 'AbortError' ? 'Server timeout. Check your connection.' : 'Server connection failed. No shared changes were saved.');
-      } finally {clearTimeout(timeout)}
-      if (response.status === 401 && attempt === 0) {
-        sessionStorage.removeItem(KEY);
-        token = askToken('Token rejected. Enter the correct Aart Stroke access token');
-        continue;
-      }
-      const data = await response.json().catch(()=>({ok:false,error:'Invalid server response'}));
-      if (!response.ok || data.ok === false) {
-        const err = new Error(data.error || 'Request failed (' + response.status + ')');
-        err.status = response.status;
-        err.code = data.code || '';
-        throw err;
-      }
-      return data;
+    const token = sessionStorage.getItem(KEY) || '';
+    if (!token) {
+      toLogin();
+      throw new Error('Please sign in to continue.');
     }
-    throw new Error('Access token rejected.');
+    const ctrl = new AbortController();
+    const timeout = setTimeout(() => ctrl.abort(), 20000);
+    let response;
+    try {
+      response = await fetch(ROOT + path, {
+        ...options, method, signal: ctrl.signal,
+        headers: {...(options.headers || {}), 'x-admin-token': token,
+          ...(options.body && typeof options.body === 'string' ? {'content-type':'application/json'} : {})}
+      });
+    } catch(e) {
+      throw new Error(e.name === 'AbortError' ? 'Server timeout. Check your connection.' : 'Server connection failed. No shared changes were saved.');
+    } finally {
+      clearTimeout(timeout);
+    }
+    if(response.status === 401) {
+      sessionStorage.removeItem(KEY);
+      toLogin();
+      throw new Error('Session invalid or expired. Please sign in again.');
+    }
+    const data = await response.json().catch(() => ({ok:false,error:'Invalid server response'}));
+    if(!response.ok || data.ok === false) {
+      const error = new Error(data.error || 'Request failed ('+response.status+')');
+      error.status = response.status;
+      error.code = data.code || '';
+      throw error;
+    }
+    return data;
   }
   window.ASAPI = {
     request,
-    logout() { sessionStorage.removeItem(KEY); location.reload(); },
+    logout() {
+      sessionStorage.removeItem(KEY);
+      // Shared customer records should not remain visible in a signed-out browser.
+      ['production-orders','production-current-order','production-form','production-process'].forEach(k=>localStorage.removeItem(k));
+      location.assign('login.html');
+    },
     listOrders() { return request('/orders').then(r => r.orders || []); },
     saveOrder(order) {
       return request('/orders',{method:'POST',body:JSON.stringify({...order,expectedRevision:Number(order.data?._revision||0)})});
