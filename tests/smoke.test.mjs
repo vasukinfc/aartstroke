@@ -98,6 +98,14 @@ test('JS source and embedded HTML scripts parse without syntax errors',()=>{
   }
  }
 });
+test('all browser API clients use the correct account Worker hostname',()=>{
+ const expected='https://aartstroke.vasukinfc.workers.dev/api';
+ for(const name of ['api-client.js','login.html','approval.html']){
+  const content=fs.readFileSync(name,'utf8');
+  assert.ok(content.includes(expected),name+' must use correct account API hostname');
+  assert.ok(!content.includes('https://aartstroke.workers.dev/api'),name+' must not use incorrect legacy host');
+ }
+});
 test('unauthenticated reads are rejected and cross-origin preflight works',async()=>{
  const db=dbMock(),res=await call(db,'/api/orders','GET',null,null);
  assert.equal(res.response.status,401);
