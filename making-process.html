@@ -17,9 +17,10 @@ body{padding:24px 18px}.page{max-width:1100px;margin:0 auto}.topbar{display:flex
 .order-context{margin-bottom:14px;padding:13px 15px}.order-context-head{display:grid;grid-template-columns:minmax(220px,1fr) 2fr;gap:16px;align-items:center}.order-context-field label{display:block;font-size:10px;font-weight:700;color:#56616e;margin-bottom:5px}.order-context-field select{width:100%;height:36px;border:1px solid #cbd1d7;border-radius:5px;padding:5px 8px;font-size:12px;background:#fff;color:#263241}.order-context-info{display:flex;flex-direction:column;gap:4px;min-width:0}.order-context-info strong{font-size:13px;overflow-wrap:anywhere}.order-context-info span{font-size:10px;color:var(--muted)}
 @media(max-width:760px){.order-context-head{grid-template-columns:1fr;gap:10px}}
 
-.stage-details{grid-column:2/-1;display:grid;grid-template-columns:1fr 2fr;gap:12px;padding-top:9px;border-top:1px solid #edf0f4}
+.stage-details{grid-column:2/-1;display:grid;grid-template-columns:1fr 1fr 2fr;gap:12px;padding-top:9px;border-top:1px solid #edf0f4}
 .stage-details label{display:block;font-weight:700;color:#56616e;font-size:11px;margin-bottom:5px}
 .stage-details input{display:block;width:100%;height:36px;border:1px solid #cbd1d7;border-radius:5px;padding:5px 9px;font-size:12px}
+.step.overdue .circle{border-color:#c65743;color:#c65743}.step.overdue .status{background:#fff0eb;color:#b7412f;border:1px solid #e7b5aa}
 .message.error{background:#fff2ed;border-color:#efc2b3;color:#9e4733}
 @media screen {.btn,.field label,.order-context-info span,.card-head span{font-size:12px}.field input,.field select{font-size:13px;min-height:38px}.step-title,.status{font-size:11px}.order-context-info strong{font-size:15px}}
 @media(max-width:760px){.stage-details{grid-column:1/-1;grid-template-columns:1fr}.stage-row{padding:13px}.btn{min-height:40px}}
@@ -43,7 +44,7 @@ body{padding:24px 18px}.page{max-width:1100px;margin:0 auto}.topbar{display:flex
 <section class="card">
   <div class="card-head"><strong>Production Stages</strong><span>Changes update the currently selected order.</span></div>
   <div class="message" id="message">Making process updated successfully.</div>
-  <div class="editor"><div id="stageEditorList"></div><div class="progress-card"><label>Overall Progress</label><div class="auto-progress" id="processProgressValue">36%</div><small>Completed = 100% of a stage. In Progress = 50%. Pending = 0%.</small></div></div>
+  <div class="editor"><div id="stageEditorList"></div><div class="progress-card"><label>Overall Progress</label><div class="auto-progress" id="processProgressValue">36%</div><small>Milestone completion (not a work-hours estimate): Completed = 100%, In Progress = 50%, Pending = 0%.</small></div></div>
 </section>
 
 <section class="card preview">
@@ -71,14 +72,15 @@ let stages=structuredClone(defaultStages),progress=0;
 const $=id=>document.getElementById(id);
 function escapeHtml(v){return String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch]))}
 function safeProgress(v){return Math.max(0,Math.min(100,Number(v)||0))}
+function localToday(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
 function prettyDate(v){if(!v)return '';const p=String(v).split('-');return p.length===3&&p[0].length===4?`${p[2]}-${p[1]}-${p[0]}`:String(v)}
 function prettyTime(v){if(!v)return '';const p=String(v).split(':');if(p.length<2)return String(v);let h=Number(p[0]);const ap=h>=12?'PM':'AM';h=h%12||12;return `${String(h).padStart(2,'0')}:${p[1]} ${ap}`}
 function toIsoDate(v){if(!v)return '';const s=String(v);if(/^\\d{4}-\\d{2}-\\d{2}$/.test(s))return s;const p=s.split('-');return p.length===3?`${p[2]}-${p[1]}-${p[0]}`:''}
 function to24Hour(v){if(!v)return '';const s=String(v);if(/^\\d{2}:\\d{2}$/.test(s))return s;const m=s.match(/^(\\d{1,2}):(\\d{2})\\s*(AM|PM)$/i);if(!m)return '';let h=Number(m[1]);if(m[3].toUpperCase()==='PM'&&h<12)h+=12;if(m[3].toUpperCase()==='AM'&&h===12)h=0;return String(h).padStart(2,'0')+':'+m[2]}
 function statusLabel(s){return s==='done'?'Completed':s==='active'?'In Progress':'Pending'}
 function calculateProgress(){const done=stages.filter(s=>s.status==='done').length,active=stages.filter(s=>s.status==='active').length;return stages.length?safeProgress(Math.round(((done+active*.5)/stages.length)*100)):0}
-function renderPreview(){const root=$('steps');root.innerHTML='';progress=calculateProgress();stages.forEach((s,i)=>{const el=document.createElement('div');const status=['done','active','pending'].includes(s.status)?s.status:'pending';el.className='step '+status;const dt=s.date||s.time?escapeHtml(s.date||'')+(s.date&&s.time?'<br>':'')+escapeHtml(s.time||''):'';el.innerHTML=`<div class="circle">${status==='done'?'✓':i+1}</div><div><div class="step-title">${escapeHtml(s.name||('Stage '+(i+1)))}</div><div class="status">${statusLabel(status)}</div><small>${dt}</small></div>`;root.appendChild(el)});$('pct').textContent=progress+'%';$('bar').style.width=progress+'%';$('processProgressValue').textContent=progress+'%'}
-function readEditor(){document.querySelectorAll('#stageEditorList [data-stage]').forEach(el=>{const i=Number(el.dataset.stage),key=el.dataset.key;if(!stages[i])return;if(key==='name')stages[i].name=el.value.trim()||defaultStages[i].name;if(key==='status')stages[i].status=el.value;if(key==='date')stages[i].date=prettyDate(el.value);if(key==='time')stages[i].time=prettyTime(el.value);if(key==='owner')stages[i].owner=el.value.trim();if(key==='note')stages[i].note=el.value.trim()});progress=calculateProgress()}
+function renderPreview(){const root=$('steps');root.innerHTML='';progress=calculateProgress();stages.forEach((s,i)=>{const el=document.createElement('div');const status=['done','active','pending'].includes(s.status)?s.status:'pending';el.className='step '+status+(status!=='done'&&s.deadline&&s.deadline<localToday()?' overdue':'');const dt=s.date||s.time?escapeHtml(s.date||'')+(s.date&&s.time?'<br>':'')+escapeHtml(s.time||''):'';el.innerHTML=`<div class="circle">${status==='done'?'✓':i+1}</div><div><div class="step-title">${escapeHtml(s.name||('Stage '+(i+1)))}</div><div class="status">${statusLabel(status)}</div><small>${dt}</small></div>`;root.appendChild(el)});$('pct').textContent=progress+'%';$('bar').style.width=progress+'%';$('processProgressValue').textContent=progress+'%'}
+function readEditor(){document.querySelectorAll('#stageEditorList [data-stage]').forEach(el=>{const i=Number(el.dataset.stage),key=el.dataset.key;if(!stages[i])return;if(key==='name')stages[i].name=el.value.trim()||defaultStages[i].name;if(key==='status')stages[i].status=el.value;if(key==='date')stages[i].date=prettyDate(el.value);if(key==='time')stages[i].time=prettyTime(el.value);if(key==='owner')stages[i].owner=el.value.trim();if(key==='note')stages[i].note=el.value.trim();if(key==='deadline')stages[i].deadline=el.value});progress=calculateProgress()}
 function buildEditor(){
  const root=$('stageEditorList');root.replaceChildren();
  stages.forEach((s,i)=>{
@@ -92,6 +94,7 @@ function buildEditor(){
     '<div class="field"><label>Date</label><input type="date" data-stage="'+i+'" data-key="date" value="'+toIsoDate(s.date)+'"></div>'+
     '<div class="field"><label>Time</label><input type="time" data-stage="'+i+'" data-key="time" value="'+to24Hour(s.time)+'"></div>'+
     '<div class="stage-details"><div><label>Assigned Employee</label><input data-stage="'+i+'" data-key="owner" placeholder="Person responsible" value="'+escapeHtml(s.owner||'')+'"></div>'+
+    '<div><label>Due date</label><input type="date" data-stage="'+i+'" data-key="deadline" value="'+escapeHtml(s.deadline||'')+'"></div>'+
     '<div><label>Stage Remarks</label><input data-stage="'+i+'" data-key="note" placeholder="Machine, checks, delays or reason for hold" value="'+escapeHtml(s.note||'')+'"></div></div>';
   root.appendChild(row);
  });
