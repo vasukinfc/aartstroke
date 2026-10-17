@@ -48,11 +48,17 @@ footer{border-top:1px solid #ebf0f8;margin-top:27px;padding-top:17px;color:#8797
    const controller=new AbortController(),t=setTimeout(()=>controller.abort(),15000);
    let response;
    try{
-    response=await fetch(root+'/orders',{headers:{'x-admin-token':candidate},signal:controller.signal,cache:'no-store'});
+    response=await fetch(root+'/session',{headers:{'x-admin-token':candidate},signal:controller.signal,cache:'no-store'});
    }finally{clearTimeout(t)}
-   if(!response.ok)throw new Error(response.status===401?'Access key not accepted.':'Server refused sign-in ('+response.status+').');
-   const data=await response.json();
-   if(!data.ok)throw new Error('Unable to confirm workspace access.');
+   if(!response.ok)throw new Error(
+     response.status===401?'Access key incorrect. Verify ADMIN_TOKEN in your Cloudflare Worker.':
+     response.status===404?'Cloudflare Worker not updated yet. Deploy the new worker.js before signing in.':
+     response.status===503?'Cloudflare D1 database is not connected to the Worker.':
+     'Server refused sign-in ('+response.status+').'
+   );
+   const data=await response.json().catch(()=>({}));
+   if(!data.ok || data.authenticated!==true || data.serverVersion!==2)
+     throw new Error('Cloudflare backend is not yet running the current authenticated API. Deploy worker.js and configure ADMIN_TOKEN.');
    sessionStorage.setItem(key,candidate);location.replace(next);
   }catch(err){message(err.name==='AbortError'?'Connection timed out. Please retry.':err.message||'Sign-in failed.');button.disabled=false;button.textContent='Sign in to workspace →'}
  });
