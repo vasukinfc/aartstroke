@@ -9,7 +9,7 @@ function dbMock(){
  function query(sql,values){
   const q=sql.replace(/\s+/g,' ').toUpperCase();
   const order=orders.get(values[0]),old=archive.get(values[0]);
-  if(q.startsWith('SELECT DATA_JSON AS DATAJSON FROM ORDERS'))return {dataJson:order?.data_json};
+  if(q.startsWith('SELECT DATA_JSON AS DATAJSON FROM ORDERS'))return order?{dataJson:order.data_json}:null;
   if(q.startsWith('SELECT ID FROM ORDERS_TRASH'))return old?{id:old.id}:null;
   if(q.startsWith('SELECT ID FROM ORDERS WHERE'))return order?{id:order.id}:null;
   if(q.startsWith('SELECT * FROM ORDERS_TRASH'))return old||null;
