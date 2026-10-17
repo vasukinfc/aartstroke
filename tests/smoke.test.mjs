@@ -5,7 +5,7 @@ import vm from 'node:vm';
 import worker from '../worker.js';
 
 function dbMock(){
- const orders=new Map(),archive=new Map(),history=new Map();
+ const orders=new Map(),archive=new Map(),history=new Map();let orderCounter=0;
  function query(sql,values){
   const q=sql.replace(/\s+/g,' ').toUpperCase();
   const order=orders.get(values[0]),old=archive.get(values[0]);
@@ -25,7 +25,7 @@ function dbMock(){
    let values=[];
    const self={
     bind(...v){values=v;return self;},
-    async first(){return query(sql,values)||null;},
+    async first(){if(sql.trim().toUpperCase().startsWith('UPDATE ORDER_COUNTERS SET'))return {number:++orderCounter};return query(sql,values)||null;},
     async all(){
       const rows=sql.includes('FROM orders_history')?[...history.values()].filter(r=>r.order_id===values[0]):
                  sql.includes('FROM orders_trash')?[...archive.values()]:[...orders.values()];
@@ -33,7 +33,7 @@ function dbMock(){
     },
     async run(){
       const q=sql.replace(/\s+/g,' ').toUpperCase();
-      if(q.startsWith('CREATE TABLE'))return {meta:{changes:0}};
+      if(q.startsWith('CREATE TABLE')||q.startsWith('INSERT OR IGNORE INTO ORDER_COUNTERS'))return {meta:{changes:0}};
       if(q.startsWith('INSERT OR IGNORE INTO ORDERS_HISTORY')){
        const [order_id,revision,order_no,saved_at,data_json]=values;
        history.set(order_id+':'+revision,{order_id,revision,order_no,saved_at,data_json});
@@ -91,7 +91,7 @@ test('order save, revision conflict, Trash and Restore protect data',async()=>{
  const db=dbMock();
  const body={id:'order-1',orderNo:'ORD-0001',data:{name:'Test print',description:'Sticker'}};
  const created=await call(db,'/api/orders','POST',body);
- assert.equal(created.response.status,200);assert.equal(created.body.revision,1);
+ assert.equal(created.response.status,200);assert.equal(created.body.revision,1);assert.equal(created.body.orderNo,'ORD-0001');
  const list=await call(db,'/api/orders');assert.equal(list.body.orders.length,1);
  const updated=await call(db,'/api/orders','POST',{...body,data:{...body.data,_revision:1,name:'New name'}});
  assert.equal(updated.body.revision,2);
