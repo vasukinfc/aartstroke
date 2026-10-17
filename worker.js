@@ -19,6 +19,15 @@ function validId(id) { return typeof id === 'string' && /^[a-zA-Z0-9_-]{1,100}$/
 async function ensureArchive(db) {
   await db.prepare('CREATE TABLE IF NOT EXISTS orders_trash (id TEXT PRIMARY KEY, order_no TEXT NOT NULL, saved_at TEXT NOT NULL, data_json TEXT NOT NULL, deleted_at TEXT NOT NULL)').run();
 }
+async function ensureHistory(db) {
+  await db.prepare('CREATE TABLE IF NOT EXISTS orders_history (order_id TEXT NOT NULL, revision INTEGER NOT NULL, order_no TEXT NOT NULL, saved_at TEXT NOT NULL, data_json TEXT NOT NULL, PRIMARY KEY (order_id,revision))').run();
+}
+async function snapshotOrder(db, row) {
+  await ensureHistory(db);
+  const revision = Number(JSON.parse(row.dataJson)._revision || 0);
+  await db.prepare('INSERT OR IGNORE INTO orders_history (order_id,revision,order_no,saved_at,data_json) VALUES (?,?,?,?,?)')
+    .bind(row.id,revision,row.orderNo,row.savedAt,row.dataJson).run();
+}
 function publicOrder(row) {
   return {id:row.id, orderNo:row.orderNo, savedAt:row.savedAt, data:JSON.parse(row.dataJson)};
 }
@@ -50,7 +59,7 @@ export default {
           return reply({ok:false,error:'Invalid order payload'},400);
         if (JSON.stringify(body.data).length > 7000000)
           return reply({ok:false,error:'Order exceeds safe size limit'},413);
-        const existing = await env.DB.prepare('SELECT data_json AS dataJson FROM orders WHERE id=?').bind(body.id).first();
+        const existing = await env.DB.prepare('SELECT id, order_no AS orderNo, saved_at AS savedAt, data_json AS dataJson FROM orders WHERE id=?').bind(body.id).first();
         const expected = Number(body.expectedRevision ?? body.data._revision ?? 0);
         const savedAt = new Date().toISOString();
         if (existing) {
@@ -59,6 +68,7 @@ export default {
           if (!Number.isInteger(expected) || expected !== revision)
             return reply({ok:false,error:'This order was updated elsewhere. Reload it before saving again.',code:'REVISION_CONFLICT'},409);
           const data = {...body.data,_revision:revision+1};
+          await snapshotOrder(env.DB,existing);
           const result = await env.DB.prepare('UPDATE orders SET order_no=?,saved_at=?,data_json=? WHERE id=? AND data_json=?')
             .bind(body.orderNo.trim(),savedAt,JSON.stringify(data),body.id,existing.dataJson).run();
           if (result.meta?.changes !== 1)
@@ -81,6 +91,35 @@ export default {
         await ensureArchive(env.DB);
         const q = await env.DB.prepare('SELECT id,order_no AS orderNo,saved_at AS savedAt,data_json AS dataJson,deleted_at AS deletedAt FROM orders_trash ORDER BY deleted_at DESC LIMIT 1000').all();
         return reply({ok:true,orders:(q.results||[]).map(r=>({...publicOrder(r),deletedAt:r.deletedAt}))});
+      }
+      const history = path.match(/^\/api\/orders\/([^/]+)\/history$/);
+      if (history && request.method === 'GET') {
+        const id=decodeURIComponent(history[1]);
+        if(!validId(id))return reply({ok:false,error:'Invalid order ID'},400);
+        await ensureHistory(env.DB);
+        const row=await env.DB.prepare('SELECT id,order_no AS orderNo,saved_at AS savedAt,data_json AS dataJson FROM orders WHERE id=?').bind(id).first();
+        if(!row)return reply({ok:false,error:'Order not found'},404);
+        const past=await env.DB.prepare('SELECT revision,saved_at AS savedAt,order_no AS orderNo FROM orders_history WHERE order_id=? ORDER BY revision DESC LIMIT 100').bind(id).all();
+        return reply({ok:true,orderId:id,latestRevision:Number(JSON.parse(row.dataJson)._revision||0),
+          revisions:(past.results||[]).map(r=>({revision:r.revision,savedAt:r.savedAt,orderNo:r.orderNo}))});
+      }
+      const rollback=path.match(/^\/api\/orders\/([^/]+)\/revisions\/([0-9]+)\/restore$/);
+      if(rollback && request.method==='POST'){
+        const id=decodeURIComponent(rollback[1]),revision=Number(rollback[2]);
+        if(!validId(id)||!Number.isSafeInteger(revision))return reply({ok:false,error:'Invalid revision'},400);
+        await ensureHistory(env.DB);
+        const current=await env.DB.prepare('SELECT id,order_no AS orderNo,saved_at AS savedAt,data_json AS dataJson FROM orders WHERE id=?').bind(id).first();
+        if(!current)return reply({ok:false,error:'Order not found'},404);
+        const historical=await env.DB.prepare('SELECT order_no AS orderNo,data_json AS dataJson FROM orders_history WHERE order_id=? AND revision=?').bind(id,revision).first();
+        if(!historical)return reply({ok:false,error:'Revision not found'},404);
+        const latest=Number(JSON.parse(current.dataJson)._revision||0);
+        await snapshotOrder(env.DB,current);
+        const restored={...JSON.parse(historical.dataJson),_revision:latest+1};
+        const savedAt=new Date().toISOString();
+        const result=await env.DB.prepare('UPDATE orders SET order_no=?,saved_at=?,data_json=? WHERE id=? AND data_json=?')
+          .bind(historical.orderNo,savedAt,JSON.stringify(restored),id,current.dataJson).run();
+        if(result.meta?.changes!==1)return reply({ok:false,error:'Concurrent update detected; reload before restoring.',code:'REVISION_CONFLICT'},409);
+        return reply({ok:true,id,orderNo:historical.orderNo,revision:latest+1,savedAt});
       }
       const restore = path.match(/^\/api\/orders\/([^/]+)\/restore$/);
       if (restore && request.method === 'POST') {
