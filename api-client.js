@@ -68,6 +68,26 @@
       return request('/orders',{method:'POST',body:JSON.stringify({...order,expectedRevision:Number(order.data?._revision||0)})});
     },
     deleteOrder(id) { return request('/orders/'+encodeURIComponent(id),{method:'DELETE'}); },
+    createApprovalLink(id) {
+      return request('/orders/'+encodeURIComponent(id)+'/approval-link',{method:'POST'});
+    },
+    listApprovals(id) {
+      return request('/orders/'+encodeURIComponent(id)+'/approvals');
+    },
+    async downloadArtwork(key,filename) {
+      const parts=String(key||'').split('/');
+      if(parts.length!==2)throw new Error('Artwork reference is invalid.');
+      const token=sessionStorage.getItem(KEY);
+      if(!token){toLogin();throw new Error('Sign in to download original artwork.')}
+      const response=await fetch(ROOT+'/artwork/'+parts.map(encodeURIComponent).join('/'),{
+        headers:{'x-admin-token':token},cache:'no-store'
+      });
+      if(!response.ok)throw new Error('Original artwork could not be downloaded ('+response.status+').');
+      const blob=await response.blob(),url=URL.createObjectURL(blob);
+      const a=document.createElement('a');a.href=url;a.download=filename||'artwork-original';
+      document.body.appendChild(a);a.click();a.remove();
+      setTimeout(()=>URL.revokeObjectURL(url),15000);
+    },
     listHistory(id) { return request('/orders/'+encodeURIComponent(id)+'/history'); },
     restoreRevision(id,revision) {
       return request('/orders/'+encodeURIComponent(id)+'/revisions/'+encodeURIComponent(revision)+'/restore',{method:'POST'});
