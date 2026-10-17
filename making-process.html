@@ -122,8 +122,14 @@ async function fetchOrders(){
      sharedApiAvailable=true;
      const known=new Set(remote.map(o=>o.id));
      const localOnly=local.filter(o=>!known.has(o.id));
-     if(localOnly.length)try{localStorage.setItem('production-legacy-backup',JSON.stringify(localOnly))}catch(e){}
-     availableOrders=[...remote,...localOnly];
+     if(localOnly.length) {
+       try {
+         const previous=JSON.parse(localStorage.getItem('production-legacy-backup')||'[]');
+         const merged=new Map([...previous,...localOnly].map(o=>[o.id,o]));
+         localStorage.setItem('production-legacy-backup',JSON.stringify([...merged.values()]));
+       }catch(e){console.warn('Could not preserve legacy cache',e)}
+     }
+     availableOrders=remote;
      writeLocalOrders(availableOrders);
    }
    catch(e){sharedApiAvailable=false;availableOrders=local;showMessage('Shared API unavailable: '+e.message);console.warn('Shared order list unavailable; using browser cache.',e)}
