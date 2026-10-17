@@ -425,6 +425,15 @@ body{min-height:100vh}button,input,select{font:inherit}
   }
 }
 
+@media screen {
+  .btn,.order-action,.process-edit-btn,.art-upload-btn,.art-change-btn{font-size:12px;min-height:36px}
+  .field input,.field select,.meta input,.approval-row input,.approval-row select,.approval-signature input,.approval-footer input,.order-search,.colour-name,.colour-ink-input{font-size:13px;min-height:34px}
+  .meta label,.field label{font-size:11px}
+  .order-table th,.order-table td{font-size:11px;padding:11px 9px}
+  .order-ledger-title strong{font-size:16px}.order-ledger-title span{font-size:12px}
+  .art-img{object-fit:contain;object-position:center;max-width:95%;height:auto}
+  .order-ledger-message,.order-empty{font-size:12px}
+}
 </style>
 </head>
 <body>
@@ -496,8 +505,8 @@ body{min-height:100vh}button,input,select{font:inherit}
   <div class="approval-title">FOR APPROVAL</div>
   <div class="approval-body">
     <div class="approval-left">
-      <div class="approval-row"><span>Customer Name</span><b>:</b><input id="name" value="ABC Traders"></div>
-      <div class="approval-row"><span>Label Description</span><b>:</b><input id="description" value="Herbal Hair Oil Label"></div>
+      <div class="approval-row"><span>Customer Name</span><b>:</b><input id="name" placeholder="Enter customer name"></div>
+      <div class="approval-row"><span>Label Description</span><b>:</b><input id="description" placeholder="Describe the label artwork"></div>
       <div class="approval-row approval-size">
         <span>Label Size</span><b>:</b><span class="dim-label">W</span><input id="w" value="80" inputmode="decimal"><span>mm</span><span class="inch-value" id="wInch">3.15 in</span>
         <span class="dim-label">H</span><input id="h" value="120" inputmode="decimal"><span>mm</span><span class="inch-value" id="hInch">4.72 in</span>
@@ -505,8 +514,8 @@ body{min-height:100vh}button,input,select{font:inherit}
       <div class="approval-row"><span>Substrate</span><b>:</b>
         <select id="material"><option>Glossy Paper</option><option>PP Silver</option><option>PP White</option><option>PP Clear</option><option>PPE</option><option>Paper</option></select>
       </div>
-      <div class="approval-row"><span>Product Code</span><b>:</b><input id="productCode" value="AD"></div>
-      <div class="approval-row"><span>Qty.</span><b>:</b><input id="qty" value="5000" inputmode="numeric"></div>
+      <div class="approval-row"><span>Product Code</span><b>:</b><input id="productCode" placeholder="Product code"></div>
+      <div class="approval-row"><span>Qty.</span><b>:</b><input id="qty" placeholder="Quantity" inputmode="numeric"></div>
       <div class="approval-colours"><span>Colours</span><b>:</b><div class="colour-items" id="colourItems"></div></div>
     </div>
 
@@ -553,8 +562,8 @@ body{min-height:100vh}button,input,select{font:inherit}
 
 <section class="order-ledger" id="orderLedger">
   <div class="order-ledger-head">
-    <div class="order-ledger-title"><strong>ORDER RECORDS</strong><span>Saved in this browser. Export CSV/Excel for backup.</span></div>
-    <div class="order-ledger-actions"><span class="order-count" id="orderCount">0</span><button class="btn" id="excelBtn" type="button">⇩ Excel</button><button class="btn" id="csvBtn" type="button">⇩ CSV</button><button class="btn danger" id="clearBtn" type="button">Clear All</button></div>
+    <div class="order-ledger-title"><strong>ORDER RECORDS</strong><span>Shared database with local recovery cache. Export CSV/Excel for an extra copy.</span></div>
+    <div class="order-ledger-actions"><span class="order-count" id="orderCount">0</span><button class="btn" id="excelBtn" type="button">⇩ Excel</button><button class="btn" id="csvBtn" type="button">⇩ CSV</button><button class="btn" id="clearBtn" type="button" title="Bulk deletion disabled for data safety">☷ Protected Records</button></div>
   </div>
   <div class="order-ledger-body">
     <div class="order-ledger-message" id="message"></div>
@@ -597,6 +606,7 @@ let stages=structuredClone(defaultStages);
 let colours=structuredClone(defaultColours);
 let processProgress=0;
 let artworkReadyPromise=Promise.resolve();
+let artworkOriginal=null;
 
 const $=id=>document.getElementById(id);
 function escapeHtml(v){return String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch]))}
@@ -669,6 +679,7 @@ function getFormSnapshot(){
   data.colours=structuredClone(colours);
   data.process={stages:structuredClone(stages),progress:processProgress};
   data.finishing=readFinishing();
+  if(artworkOriginal) data.originalArtwork=artworkOriginal;
   const art=$('artPreview'); if(art?.src?.startsWith('data:')) data.artwork=art.src;
   return data;
 }
@@ -680,7 +691,27 @@ function setArtwork(src){
 let sharedApiAvailable=false;
 function readOrders(){const d=readJson(ORDER_KEY,'[]');return Array.isArray(d)?d:[]}
 function writeOrders(orders){try{localStorage.setItem(ORDER_KEY,JSON.stringify(orders));return true}catch(e){showMessage('Browser storage is full. Delete old orders or use a smaller artwork image.');return false}}
-async function syncSharedOrders(){try{const remote=await ASAPI.listOrders();sharedApiAvailable=true;writeOrders(remote);renderOrderTable();return remote}catch(e){sharedApiAvailable=false;console.warn('Shared API unavailable; using browser cache.',e);return readOrders()}}
+async function syncSharedOrders(){
+  const local=readOrders();
+  try {
+    const remote=await ASAPI.listOrders();
+    sharedApiAvailable=true;
+    const remoteIds=new Set(remote.map(o=>o.id));
+    const localOnly=local.filter(o=>!remoteIds.has(o.id));
+    // Never replace legacy browser records with a remote response before an explicit import.
+    if(localOnly.length) {
+      try{localStorage.setItem('production-legacy-backup',JSON.stringify(localOnly))}catch(e){}
+      showMessage(localOnly.length+' local-only order(s) preserved. Save each to import into the shared database.');
+    }
+    writeOrders([...remote,...localOnly]);renderOrderTable();
+    return remote;
+  }catch(e){
+    sharedApiAvailable=false;
+    showMessage('Shared database unavailable: '+e.message+'. Browser orders are read-only until connected.');
+    console.warn('Shared order list unavailable; preserving browser cache.',e);
+    return local;
+  }
+}
 
 function currentOrderId(){return localStorage.getItem(CURRENT_KEY)||''}
 function setCurrentOrderId(id){if(id)localStorage.setItem(CURRENT_KEY,id);else localStorage.removeItem(CURRENT_KEY)}
@@ -695,16 +726,50 @@ function nextOrderNo(orders){let max=0;orders.forEach(o=>{const m=String(o.order
 function formatSavedAt(v){const d=new Date(v);return Number.isNaN(d.getTime())?String(v||''):d.toLocaleString(undefined,{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})}
 function orderStatus(o){const p=o?.data?.process?.progress;return Number.isFinite(Number(p))?safeProgress(p)+'%':'Not started'}
 
+function validateOrder(data){
+  if(!String(data.name||'').trim())return 'Enter the customer name before saving.';
+  if(!String(data.description||'').trim())return 'Enter the label description before saving.';
+  const w=Number(data.w),h=Number(data.h),qty=Number(data.qty);
+  if(!Number.isFinite(w)||w<=0||w>100000)return 'Enter a valid label width in mm.';
+  if(!Number.isFinite(h)||h<=0||h>100000)return 'Enter a valid label height in mm.';
+  if(!Number.isSafeInteger(qty)||qty<=0)return 'Quantity must be a positive whole number.';
+  return '';
+}
 async function saveForm({newOrder=false}={}){
-  try{await artworkReadyPromise}catch(e){return null}
-  // A new order must never inherit another order's production stages.
+  try{await artworkReadyPromise}catch(e){showMessage('Artwork is not ready: '+e.message);return null}
   if(newOrder){stages=structuredClone(defaultStages);processProgress=0;renderStages()}
-  const data=getFormSnapshot(); const orders=readOrders(); let id=newOrder?'':currentOrderId(); let target=id?orders.find(o=>o.id===id):null;
-  if(target){target.data=data;target.savedAt=new Date().toISOString()}else{target={id:Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8),orderNo:nextOrderNo(orders),savedAt:new Date().toISOString(),data};orders.unshift(target);id=target.id}
-  if(!writeOrders(orders))return null;
-  setCurrentOrderId(id); localStorage.setItem(FORM_KEY,JSON.stringify(data)); localStorage.setItem(PROCESS_KEY,JSON.stringify(data.process));
-  if(sharedApiAvailable){try{await ASAPI.saveOrder(target);const remote=await ASAPI.listOrders();writeOrders(remote)}catch(e){showMessage('Server save failed: '+e.message);return null}}
-  renderOrderTable(); showMessage((newOrder?'New order saved: ':'Order saved: ')+target.orderNo+(sharedApiAvailable?' (shared)':' (this browser)')); return target
+  const data=getFormSnapshot(),error=validateOrder(data);
+  if(error){showMessage(error);return null}
+  try{localStorage.setItem(FORM_KEY,JSON.stringify(data))}catch(e){}
+  if(!sharedApiAvailable){
+    showMessage('Not saved to shared database. Reconnect first; this form remains available as a local draft.');
+    return null;
+  }
+  const orders=readOrders();
+  let id=newOrder?'':currentOrderId();
+  const current=id?orders.find(o=>o.id===id):null;
+  const target=current
+    ? {...current,data}
+    : {id:Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8),
+       orderNo:nextOrderNo(orders),data};
+  try{
+    const result=await ASAPI.saveOrder(target);
+    target.savedAt=result.savedAt||new Date().toISOString();
+    target.orderNo=result.orderNo||target.orderNo;
+    target.data._revision=Number(result.revision||0);
+    const index=orders.findIndex(o=>o.id===target.id);
+    if(index>=0)orders[index]=target;else orders.unshift(target);
+    writeOrders(orders);
+    setCurrentOrderId(target.id);
+    try{localStorage.setItem(PROCESS_KEY,JSON.stringify(data.process))}catch(e){}
+    try{localStorage.removeItem('production-unsynced-draft')}catch(e){}
+    renderOrderTable();
+    showMessage((newOrder?'New order saved: ':'Order saved: ')+target.orderNo+' (shared database)');
+    return target;
+  }catch(e){
+    showMessage('SERVER SAVE FAILED: '+e.message+'. Nothing was overwritten on the server. Reload before retrying if another user changed it.');
+    return null;
+  }
 }
 function applyFormData(d){
   if(!d||typeof d!=='object')return;
@@ -714,12 +779,14 @@ function applyFormData(d){
   if(d.process?.stages){stages=structuredClone(d.process.stages);processProgress=safeProgress(d.process.progress)}
   if(d.finishing)applyFinishing(d.finishing);
   setArtwork(d.artwork||'');
+  artworkOriginal=d.originalArtwork||null;
 }
 function loadForm(){
   const currentId=currentOrderId();
   const orders=readOrders();
   const current=orders.find(o=>o.id===currentId);
-  const d=current?.data || readJson(FORM_KEY,'{}') || {};
+  const draft=readJson('production-unsynced-draft','null');
+  const d=(draft && draft.orderId===currentId && draft.data) || current?.data || readJson(FORM_KEY,'{}') || {};
   applyFormData(d);
 
   // Only restore separately saved process data when it actually exists.
@@ -739,14 +806,15 @@ function loadSavedOrder(id){
 }
 async function deleteSavedOrder(id){
   const orders=readOrders(),o=orders.find(x=>x.id===id);if(!o)return;
-  if(!confirm('Delete '+o.orderNo+' permanently?'))return;
-  if(!writeOrders(orders.filter(x=>x.id!==id)))return;
-  if(sharedApiAvailable){try{await ASAPI.deleteOrder(id);writeOrders(await ASAPI.listOrders())}catch(e){showMessage('Server delete failed: '+e.message);return}}
-  if(currentOrderId()===id){setCurrentOrderId('');localStorage.removeItem(FORM_KEY);localStorage.removeItem(PROCESS_KEY)}renderOrderTable();showMessage(o.orderNo+' deleted.')
+  if(!sharedApiAvailable){showMessage('Reconnect to shared records before archiving orders.');return}
+  if(!confirm('Move '+o.orderNo+' to Trash? You can restore it from the dashboard.'))return;
+  try{await ASAPI.deleteOrder(id)}
+  catch(e){showMessage('Archive failed: '+e.message);return}
+  writeOrders(orders.filter(x=>x.id!==id));
+  if(currentOrderId()===id){setCurrentOrderId('');localStorage.removeItem(FORM_KEY);localStorage.removeItem(PROCESS_KEY)}
+  renderOrderTable();showMessage(o.orderNo+' moved to Trash. Restore it from the dashboard.');
 }
-async function clearAllOrders(){const orders=readOrders();if(!orders.length){showMessage('There are no saved orders.');return}if(!confirm('Delete all saved orders? This affects every user of the shared system.'))return;if(!writeOrders([]))return;
-  if(sharedApiAvailable){try{await ASAPI.clearOrders();writeOrders(await ASAPI.listOrders())}catch(e){showMessage('Server clear failed: '+e.message);return}}
-  setCurrentOrderId('');localStorage.removeItem(FORM_KEY);localStorage.removeItem(PROCESS_KEY);renderOrderTable();showMessage('All saved orders deleted.')}
+
 function orderMatches(o,q){if(!q)return true;const d=o.data||{};return [o.orderNo,d.name,d.description,d.productCode,d.material,d.qty,d.submittedBy].join(' ').toLowerCase().includes(q.toLowerCase())}
 function renderOrderTable(){
   const body=$('orderTableBody'),count=$('orderCount'),search=$('orderSearch');if(!body)return;
@@ -759,7 +827,11 @@ function downloadBlob(name,content,mime){const a=document.createElement('a'),url
 const exportColumns=['Order No.','Saved','Customer Name','Label Description','Product Code','Qty.','Width (mm)','Height (mm)','Substrate','Ink Consumption (mm)','Submitted By','Submitted For','Time','Dye No.','Prepared By','Checked By','Approved By','Colours','Finishing','Form Type','Direction','Process Progress'];
 function exportRow(o){const d=o.data||{},f=d.finishing||{};return [o.orderNo,formatSavedAt(o.savedAt),d.name,d.description,d.productCode,d.qty,d.w,d.h,d.material,d.ink,d.submittedBy,d.submittedFor,d.time,d.dye,d.preparedBy,d.checkedBy,d.approvedBy,(d.colours||[]).filter(c=>c.checked&&c.name).map(c=>`${c.name} (${c.ink||0} mm)`).join(', '),(f.selected||[]).join(', '),f.formType||'',f.direction||'',orderStatus(o)]}
 function exportCsv(){const orders=readOrders();if(!orders.length){showMessage('No orders to download.');return}const esc=v=>`"${String(v??'').replace(/"/g,'""')}"`;downloadBlob(`production-orders-${new Date().toISOString().slice(0,10)}.csv`,[exportColumns,...orders.map(exportRow)].map(r=>r.map(esc).join(',')).join('\\r\\n'),'text/csv;charset=utf-8')}
-function exportExcel(){const orders=readOrders();if(!orders.length){showMessage('No orders to download.');return}const table=`<html><head><meta charset="UTF-8"></head><body><table border="1">${[exportColumns,...orders.map(exportRow)].map((r,i)=>`<tr>${r.map(v=>i===0?`<th>${escapeHtml(v)}</th>`:`<td>${escapeHtml(v)}</td>`).join('')}</tr>`).join('')}</table></body></html>`;downloadBlob(`production-orders-${new Date().toISOString().slice(0,10)}.xls`,table,'application/vnd.ms-excel;charset=utf-8')}
+function exportExcel(){
+  const orders=readOrders();
+  if(!orders.length){showMessage('No orders to export.');return}
+  ASXLSX.download([exportColumns,...orders.map(exportRow)],'production-orders-'+new Date().toISOString().slice(0,10));
+}
 
 function compressArtwork(file){
   return new Promise((resolve,reject)=>{
@@ -769,67 +841,69 @@ function compressArtwork(file){
     img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('Could not load that artwork image.'))};img.src=url
   })
 }
+async function prepareArtwork(file){
+  const data=await compressArtwork(file);
+  setArtwork(data);
+  artworkOriginal=null;
+  if(!sharedApiAvailable){
+    showMessage('Artwork preview loaded locally. Original file not backed up: connect to shared storage.');
+    return data;
+  }
+  try {
+    const uploaded=await ASAPI.uploadArtwork(file,currentOrderId()||'unassigned');
+    artworkOriginal={key:uploaded.key,size:uploaded.size,mime:uploaded.contentType,name:file.name};
+    showMessage('Original artwork securely uploaded; screen preview ready.');
+  } catch(e) {
+    showMessage('Preview ready; ORIGINAL NOT STORED: '+e.message);
+  }
+  return data;
+}
+
 function initArtwork(){
   const box=$('artBox'),zone=$('artUploadZone'),input=$('artFileInput'),preview=$('artPreview');
   const open=()=>input.click();
   $('artUploadBtn').addEventListener('click',e=>{e.stopPropagation();open()});$('artChangeBtn').addEventListener('click',open);zone.addEventListener('click',e=>{if(e.target!==$('artUploadBtn'))open()});
-  input.addEventListener('change',()=>{const file=input.files?.[0];if(file){const t=zone.querySelector('.art-upload-title');if(t)t.textContent='Processing artwork…';artworkReadyPromise=compressArtwork(file).then(data=>{setArtwork(data);if(t)t.textContent='Drag & Drop Sticker / Label Artwork';return data}).catch(err=>{if(t)t.textContent='Drag & Drop Sticker / Label Artwork';alert(err.message);throw err})}});
+  input.addEventListener('change',()=>{const file=input.files?.[0];if(file){const t=zone.querySelector('.art-upload-title');if(t)t.textContent='Processing artwork…';artworkReadyPromise=prepareArtwork(file).then(data=>{if(t)t.textContent='Drag & Drop Sticker / Label Artwork';return data}).catch(err=>{if(t)t.textContent='Drag & Drop Sticker / Label Artwork';alert(err.message);throw err})}});
   ['dragenter','dragover'].forEach(n=>box.addEventListener(n,e=>{e.preventDefault();zone.classList.add('dragover')}));['dragleave','drop'].forEach(n=>box.addEventListener(n,e=>{e.preventDefault();zone.classList.remove('dragover')}));
-  box.addEventListener('drop',e=>{const file=e.dataTransfer?.files?.[0];if(file){const t=zone.querySelector('.art-upload-title');if(t)t.textContent='Processing artwork…';artworkReadyPromise=compressArtwork(file).then(data=>{setArtwork(data);if(t)t.textContent='Drag & Drop Sticker / Label Artwork';return data}).catch(err=>{if(t)t.textContent='Drag & Drop Sticker / Label Artwork';alert(err.message);throw err})}});
+  box.addEventListener('drop',e=>{const file=e.dataTransfer?.files?.[0];if(file){const t=zone.querySelector('.art-upload-title');if(t)t.textContent='Processing artwork…';artworkReadyPromise=prepareArtwork(file).then(data=>{if(t)t.textContent='Drag & Drop Sticker / Label Artwork';return data}).catch(err=>{if(t)t.textContent='Drag & Drop Sticker / Label Artwork';alert(err.message);throw err})}});
 }
 function resetFormToBlank(){
   setCurrentOrderId('');localStorage.removeItem(FORM_KEY);localStorage.removeItem(PROCESS_KEY);
+  localStorage.removeItem('production-unsynced-draft');
   location.reload();
 }
 
 function init(){
   const now=new Date();['revDate','submittedOn','approvalDate'].forEach(id=>{const el=$(id);if(el&&!el.value)el.valueAsDate=now});
-  loadForm();updateDimensionInches();renderColours();renderStages();renderOrderTable();initArtwork();syncSharedOrders().then(remote=>{const id=currentOrderId();const current=remote.find(o=>o.id===id);if(current){applyFormData(current.data||{});updateDimensionInches();renderColours();renderStages();renderOrderTable()} });
+  loadForm();updateDimensionInches();renderColours();renderStages();renderOrderTable();initArtwork();syncSharedOrders().then(remote=>{
+    const requested=new URLSearchParams(location.search).get('orderId');
+    if(requested && readOrders().some(o=>o.id===requested)){loadSavedOrder(requested);return}
+    const id=currentOrderId(),current=remote.find(o=>o.id===id);
+    if(current && !localStorage.getItem('production-unsynced-draft')){
+      applyFormData(current.data||{});updateDimensionInches();renderColours();renderStages();renderOrderTable();
+    }
+  });
   ['w','h'].forEach(id=>$(id).addEventListener('input',updateDimensionInches));
   $('orderSearch').addEventListener('input',renderOrderTable);
-  $('orderTableBody').addEventListener('click',e=>{const b=e.target.closest('[data-action]');if(!b)return;const id=b.dataset.id,action=b.dataset.action;if(action==='load')loadSavedOrder(id);if(action==='process'){openMakingProcess(id);return}if(action==='delete')deleteSavedOrder(id);if(action==='excel'){const o=readOrders().find(x=>x.id===id);if(o){const rows=[exportColumns,exportRow(o)],html=`<html><head><meta charset="UTF-8"></head><body><table border="1">${rows.map((r,i)=>`<tr>${r.map(v=>i===0?`<th>${escapeHtml(v)}</th>`:`<td>${escapeHtml(v)}</td>`).join('')}</tr>`).join('')}</table></body></html>`;downloadBlob((o.orderNo||'order')+'.xls',html,'application/vnd.ms-excel;charset=utf-8')}}});
+  $('orderTableBody').addEventListener('click',e=>{const b=e.target.closest('[data-action]');if(!b)return;const id=b.dataset.id,action=b.dataset.action;if(action==='load')loadSavedOrder(id);if(action==='process'){openMakingProcess(id);return}if(action==='delete')deleteSavedOrder(id);if(action==='excel'){const o=readOrders().find(x=>x.id===id);if(o){ASXLSX.download([exportColumns,exportRow(o)],o.orderNo||'order')}}});
   const save=()=>saveForm();const saveNew=()=>saveForm({newOrder:true});
+  let draftTimer;
+  const queueDraft=()=>{
+    clearTimeout(draftTimer);
+    draftTimer=setTimeout(()=>{
+      try{localStorage.setItem('production-unsynced-draft',JSON.stringify({orderId:currentOrderId(),data:getFormSnapshot()}))}
+      catch(e){console.warn('Local draft capacity reached',e)}
+    },850);
+  };
+  document.querySelector('.sheet').addEventListener('input',queueDraft);
+  document.querySelector('.sheet').addEventListener('change',queueDraft);
   $('saveBtn').addEventListener('click',save);$('saveBtnBottom').addEventListener('click',save);$('saveNewBtn').addEventListener('click',saveNew);$('printBtn').addEventListener('click',()=>window.print());$('printBtnBottom').addEventListener('click',()=>window.print());
   $('homeBtn').addEventListener('click',()=>location.href='index.html');$('processBtn').addEventListener('click',()=>openMakingProcess());$('processEditBtn').addEventListener('click',()=>openMakingProcess());$('recordsBtn').addEventListener('click',()=>$('orderLedger').scrollIntoView({behavior:'smooth'}));
-  $('excelBtn').addEventListener('click',exportExcel);$('csvBtn').addEventListener('click',exportCsv);$('clearBtn').addEventListener('click',clearAllOrders);
+  $('excelBtn').addEventListener('click',exportExcel);$('csvBtn').addEventListener('click',exportCsv);$('clearBtn').addEventListener('click',()=>showMessage('Bulk deletion is disabled. Archive one order at a time and restore from Dashboard → Trash.'));
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 </script>
-<script>
-// Aart Stroke dynamic API client. Admin token is kept only in this browser session.
-window.AARTSTROKE_API = "https://aartstroke.workers.dev/api";
-window.ASAPI = {
-  async request(path, options={}) {
-    const method = String(options.method || 'GET').toUpperCase();
-    const headers = {'content-type':'application/json', ...(options.headers||{})};
-    if (method !== 'GET') {
-      let token = sessionStorage.getItem('as_admin_token') || '';
-      if (!token) {
-        token = window.prompt('Enter Aart Stroke admin access token to update shared production records') || '';
-        token = token.trim();
-        if (!token) throw new Error('Admin access token is required to update shared records.');
-        sessionStorage.setItem('as_admin_token', token);
-      }
-      headers['x-admin-token'] = token;
-    }
-    let r = await fetch(window.AARTSTROKE_API + path, {...options, method, headers});
-    if (r.status === 401 && method !== 'GET') {
-      sessionStorage.removeItem('as_admin_token');
-      const token = (window.prompt('Admin access token was rejected. Enter the correct token') || '').trim();
-      if (!token) throw new Error('Admin authorization was cancelled.');
-      sessionStorage.setItem('as_admin_token', token);
-      headers['x-admin-token'] = token;
-      r = await fetch(window.AARTSTROKE_API + path, {...options, method, headers});
-    }
-    const data = await r.json().catch(()=>({error:'Invalid server response'}));
-    if (!r.ok || data.ok === false) throw new Error(data.error || `Request failed (${r.status})`);
-    return data;
-  },
-  async listOrders() { return (await this.request('/orders')).orders || []; },
-  async saveOrder(order) { return this.request('/orders', {method:'POST',body:JSON.stringify(order)}); },
-  async deleteOrder(id) { return this.request('/orders/'+encodeURIComponent(id), {method:'DELETE'}); },
-  async clearOrders() { return this.request('/orders', {method:'DELETE'}); }
-};
-</script>
+<script src="api-client.js"></script>
+<script src="xlsx-export.js"></script>
 </body>
 </html>
