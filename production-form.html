@@ -425,6 +425,8 @@ body{min-height:100vh}button,input,select{font:inherit}
   }
 }
 
+.artwork-storage-status{margin:8px 0 0;padding:9px 11px;border:1px solid #f2d7ad;background:#fff8e9;color:#8e5b16;border-radius:7px;font-size:12px;line-height:1.5}
+.artwork-storage-status.ok{border-color:#bee4d1;background:#eaf8f0;color:#176b49}
 .history-dialog{width:min(560px,calc(100vw - 24px));border:1px solid #d2dded;border-radius:16px;box-shadow:0 22px 75px #14243c4d;padding:22px;color:#1d2835}
 .history-dialog::backdrop{background:rgba(12,25,45,.56)}
 .history-dialog h3{font-size:21px;margin:0 0 8px}
@@ -497,6 +499,7 @@ body{min-height:100vh}button,input,select{font:inherit}
     <img id="artPreview" class="art-img" alt="Sticker / label artwork">
     <button type="button" class="art-change-btn" id="artChangeBtn">Change Artwork</button>
   </div>
+  <p id="artworkStorageStatus" class="artwork-storage-status" role="status">Original artwork backup not verified. Preview images are not print masters.</p>
 </section>
 
 <section class="process">
@@ -793,6 +796,7 @@ function applyFormData(d){
   if(d.finishing)applyFinishing(d.finishing);
   setArtwork(d.artwork||'');
   artworkOriginal=d.originalArtwork||null;
+  showOriginalStatus(artworkOriginal?'Original artwork is referenced in private storage.':'No original artwork is linked to this record. Only a compressed preview may exist.',!!artworkOriginal);
 }
 function loadForm(){
   const currentId=currentOrderId();
@@ -889,19 +893,27 @@ function compressArtwork(file){
     img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('Could not load that artwork image.'))};img.src=url
   })
 }
+function showOriginalStatus(message,ok=false){
+  const el=$('artworkStorageStatus');
+  if(el){el.textContent=message;el.classList.toggle('ok',!!ok)}
+}
 async function prepareArtwork(file){
   const data=await compressArtwork(file);
   setArtwork(data);
   artworkOriginal=null;
+  showOriginalStatus('Uploading original artwork to protected storage…');
   if(!sharedApiAvailable){
+    showOriginalStatus('Original NOT backed up: shared database connection unavailable. This is only a compressed preview.');
     showMessage('Artwork preview loaded locally. Original file not backed up: connect to shared storage.');
     return data;
   }
   try {
     const uploaded=await ASAPI.uploadArtwork(file,currentOrderId()||'unassigned');
     artworkOriginal={key:uploaded.key,size:uploaded.size,mime:uploaded.contentType,name:file.name};
+    showOriginalStatus('Original artwork uploaded to private R2 storage ('+Math.round(uploaded.size/1024)+' KB).',true);
     showMessage('Original artwork securely uploaded; screen preview ready.');
   } catch(e) {
+    showOriginalStatus('Original NOT stored: '+e.message+' Only a compressed preview is available.');
     showMessage('Preview ready; ORIGINAL NOT STORED: '+e.message);
   }
   return data;
