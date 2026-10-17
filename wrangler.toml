@@ -1,0 +1,8 @@
+name = "aartstroke"
+main = "worker.js"
+compatibility_date = "2026-10-15"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "aartstroke-production"
+database_id = "fb63166b-ce3e-4363-8852-0a5f9f735839"
