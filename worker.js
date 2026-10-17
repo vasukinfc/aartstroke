@@ -58,8 +58,11 @@ export default {
 
     try {
       if (path === '/api/orders' && request.method === 'GET') {
-        const q = await env.DB.prepare('SELECT id, order_no AS orderNo, saved_at AS savedAt, data_json AS dataJson FROM orders ORDER BY saved_at DESC LIMIT 1000').all();
-        return reply({ok:true,orders:(q.results || []).map(publicOrder)});
+        const limit=Math.min(200,Math.max(1,Number.parseInt(url.searchParams.get('limit')||'100',10)||100));
+        const offset=Math.max(0,Math.min(100000,Number.parseInt(url.searchParams.get('offset')||'0',10)||0));
+        const q = await env.DB.prepare('SELECT id, order_no AS orderNo, saved_at AS savedAt, data_json AS dataJson FROM orders ORDER BY saved_at DESC, id DESC LIMIT ? OFFSET ?').bind(limit,offset).all();
+        const orders=(q.results||[]).map(publicOrder);
+        return reply({ok:true,orders,nextOffset:orders.length===limit?offset+limit:null});
       }
       if (path === '/api/orders' && request.method === 'POST') {
         const len = Number(request.headers.get('content-length') || 0);
