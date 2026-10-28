@@ -122,7 +122,7 @@ export default {
     const identity=await getIdentity(request,env);
     if(!identity)return reply({ok:false,error:'Authentication required. Enter your authorized access key.'},401);
     if(identity.role==='viewer' && request.method!=='GET')return reply({ok:false,error:'Read-only access. Ask an administrator for permission.'},403);
-    if(identity.role!=='admin' && (request.method==='DELETE'||/\\/restore$/.test(path)))return reply({ok:false,error:'Administrator permission required.'},403);
+    if(identity.role!=='admin' && (request.method==='DELETE'||path.endsWith('/restore')))return reply({ok:false,error:'Administrator permission required.'},403);
 
     try {
       if(path==='/api/session' && request.method==='GET')return reply({ok:true,authenticated:true,serverVersion:3,application:APP_NAME,user:identity});
