@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="Aart Stroke making process editor.">
-<title>Aart Stroke — Making Process</title>
+<meta name="description" content="Vasuki NFC making process editor.">
+<title>Vasuki NFC — Making Process</title>
 <style>
 :root{--page:#f5f7fa;--card:#fff;--line:#d7dde4;--text:#1d2835;--muted:#697584;--blue:#2f78e7;--green:#3aa373}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:Arial,Helvetica,sans-serif;color:var(--text);background:var(--page)}
@@ -24,13 +24,23 @@ body{padding:24px 18px}.page{max-width:1100px;margin:0 auto}.topbar{display:flex
 .message.error{background:#fff2ed;border-color:#efc2b3;color:#9e4733}
 @media screen {.btn,.field label,.order-context-info span,.card-head span{font-size:12px}.field input,.field select{font-size:13px;min-height:38px}.step-title,.status{font-size:11px}.order-context-info strong{font-size:15px}}
 @media(max-width:760px){.stage-details{grid-column:1/-1;grid-template-columns:1fr}.stage-row{padding:13px}.btn{min-height:40px}}
+
+/* Vasuki NFC identity layer (visual only; existing IDs and data remain unchanged) */
+:root{--vasuki-ink:#10131a;--vasuki-gold:#e3b762;--vasuki-violet:#6254cf}
+body{font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
+a,button{transition:background-color .16s ease,border-color .16s ease,box-shadow .16s ease}
+:focus-visible{outline:3px solid var(--vasuki-violet);outline-offset:2px}
+.brand-mark-image,.vasuki-logo-image{width:100%;height:100%;object-fit:contain;display:block}
+.vasuki-brandline{font-size:10px;letter-spacing:.11em;text-transform:uppercase;font-weight:800;color:var(--vasuki-violet)}
+@media(max-width:760px){button,input,select,textarea{font-size:14px;touch-action:manipulation}}
+.btn.primary{background:#181b25!important;border-color:#181b25!important}.stage-row{border-radius:10px}
 </style>
 <script src="api-client.js"></script>
 </head>
 <body>
 <div class="page">
 <header class="topbar">
-  <div class="title"><h1>Making Process Update</h1><p>Update production stages, status, date, time and overall progress.</p></div>
+  <div class="title"><h1>Vasuki NFC · Production Tracking</h1><p>Update production stages, status, date, time and overall progress.</p></div>
   <div class="actions"><button class="btn" id="resetBtn" type="button">Reset</button><button class="btn" id="backBtn" type="button">Back to Production Form</button><button class="btn primary" id="saveBtn" type="button">Save Changes</button></div>
 </header>
 
@@ -44,13 +54,13 @@ body{padding:24px 18px}.page{max-width:1100px;margin:0 auto}.topbar{display:flex
 <section class="card">
   <div class="card-head"><strong>Production Stages</strong><span>Changes update the currently selected order.</span></div>
   <div class="message" id="message">Making process updated successfully.</div>
-  <div class="editor"><div id="stageEditorList"></div><div class="progress-card"><label>Overall Progress</label><div class="auto-progress" id="processProgressValue">36%</div><small>Milestone completion (not a work-hours estimate): Completed = 100%, In Progress = 50%, Pending = 0%.</small></div></div>
+  <div class="editor"><div id="stageEditorList"></div><div class="progress-card"><label>Overall Progress</label><div class="auto-progress" id="processProgressValue">0%</div><small>Milestone completion (not a work-hours estimate): Completed = 100%, In Progress = 50%, Pending = 0%.</small></div></div>
 </section>
 
 <section class="card preview">
   <div class="preview-head">Live Preview</div>
   <div class="preview-body">
-    <div class="percent-line"><span>Production status of this artwork</span><span class="percent" id="pct">36%</span></div>
+    <div class="percent-line"><span>Production status of this artwork</span><span class="percent" id="pct">0%</span></div>
     <div class="progress"><span id="bar"></span></div>
     <div class="steps" id="steps"></div>
   </div>
@@ -62,10 +72,10 @@ const PROCESS_KEY='production-process',FORM_KEY='production-form',ORDERS_KEY='pr
 const defaultStages=[
  {name:'Artwork Received',status:'pending',date:'',time:''},
  {name:'Artwork Checking',status:'pending',date:'',time:''},
+ {name:'Customer Approval',status:'pending',date:'',time:''},
  {name:'Printing',status:'pending',date:'',time:''},
  {name:'Finishing',status:'pending',date:'',time:''},
  {name:'Quality Checking',status:'pending',date:'',time:''},
- {name:'Customer Approval',status:'pending',date:'',time:''},
  {name:'Completed',status:'pending',date:'',time:''}
 ];
 let stages=structuredClone(defaultStages),progress=0;
@@ -75,12 +85,12 @@ function safeProgress(v){return Math.max(0,Math.min(100,Number(v)||0))}
 function localToday(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
 function prettyDate(v){if(!v)return '';const p=String(v).split('-');return p.length===3&&p[0].length===4?`${p[2]}-${p[1]}-${p[0]}`:String(v)}
 function prettyTime(v){if(!v)return '';const p=String(v).split(':');if(p.length<2)return String(v);let h=Number(p[0]);const ap=h>=12?'PM':'AM';h=h%12||12;return `${String(h).padStart(2,'0')}:${p[1]} ${ap}`}
-function toIsoDate(v){if(!v)return '';const s=String(v);if(/^\\d{4}-\\d{2}-\\d{2}$/.test(s))return s;const p=s.split('-');return p.length===3?`${p[2]}-${p[1]}-${p[0]}`:''}
-function to24Hour(v){if(!v)return '';const s=String(v);if(/^\\d{2}:\\d{2}$/.test(s))return s;const m=s.match(/^(\\d{1,2}):(\\d{2})\\s*(AM|PM)$/i);if(!m)return '';let h=Number(m[1]);if(m[3].toUpperCase()==='PM'&&h<12)h+=12;if(m[3].toUpperCase()==='AM'&&h===12)h=0;return String(h).padStart(2,'0')+':'+m[2]}
+function toIsoDate(v){if(!v)return '';const s=String(v);if(/^\d{4}-\d{2}-\d{2}$/.test(s))return s;const p=s.split('-');return p.length===3?`${p[2]}-${p[1]}-${p[0]}`:''}
+function to24Hour(v){if(!v)return '';const s=String(v);if(/^\d{2}:\d{2}$/.test(s))return s;const m=s.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);if(!m)return '';let h=Number(m[1]);if(m[3].toUpperCase()==='PM'&&h<12)h+=12;if(m[3].toUpperCase()==='AM'&&h===12)h=0;return String(h).padStart(2,'0')+':'+m[2]}
 function statusLabel(s){return s==='done'?'Completed':s==='active'?'In Progress':'Pending'}
 function calculateProgress(){const done=stages.filter(s=>s.status==='done').length,active=stages.filter(s=>s.status==='active').length;return stages.length?safeProgress(Math.round(((done+active*.5)/stages.length)*100)):0}
 function renderPreview(){const root=$('steps');root.innerHTML='';progress=calculateProgress();stages.forEach((s,i)=>{const el=document.createElement('div');const status=['done','active','pending'].includes(s.status)?s.status:'pending';el.className='step '+status+(status!=='done'&&s.deadline&&s.deadline<localToday()?' overdue':'');const dt=s.date||s.time?escapeHtml(s.date||'')+(s.date&&s.time?'<br>':'')+escapeHtml(s.time||''):'';el.innerHTML=`<div class="circle">${status==='done'?'✓':i+1}</div><div><div class="step-title">${escapeHtml(s.name||('Stage '+(i+1)))}</div><div class="status">${statusLabel(status)}</div><small>${dt}</small></div>`;root.appendChild(el)});$('pct').textContent=progress+'%';$('bar').style.width=progress+'%';$('processProgressValue').textContent=progress+'%'}
-function readEditor(){document.querySelectorAll('#stageEditorList [data-stage]').forEach(el=>{const i=Number(el.dataset.stage),key=el.dataset.key;if(!stages[i])return;if(key==='name')stages[i].name=el.value.trim()||defaultStages[i].name;if(key==='status')stages[i].status=el.value;if(key==='date')stages[i].date=prettyDate(el.value);if(key==='time')stages[i].time=prettyTime(el.value);if(key==='owner')stages[i].owner=el.value.trim();if(key==='note')stages[i].note=el.value.trim();if(key==='deadline')stages[i].deadline=el.value});progress=calculateProgress()}
+function readEditor(){document.querySelectorAll('#stageEditorList [data-stage]').forEach(el=>{const i=Number(el.dataset.stage),key=el.dataset.key;if(!stages[i])return;if(key==='name')stages[i].name=el.value.trim()||defaultStages[i]?.name||('Stage '+(i+1));if(key==='status')stages[i].status=el.value;if(key==='date')stages[i].date=prettyDate(el.value);if(key==='time')stages[i].time=prettyTime(el.value);if(key==='owner')stages[i].owner=el.value.trim();if(key==='note')stages[i].note=el.value.trim();if(key==='deadline')stages[i].deadline=el.value});progress=calculateProgress()}
 function buildEditor(){
  const root=$('stageEditorList');root.replaceChildren();
  stages.forEach((s,i)=>{
@@ -186,7 +196,7 @@ async function init(){
    });
   $('saveBtn').addEventListener('click',save);$('resetBtn').addEventListener('click',reset);
   $('orderSelect').addEventListener('change',e=>chooseOrder(e.target.value));
-  $('backBtn').addEventListener('click',()=>{if(currentSharedOrder)localStorage.setItem(CURRENT_KEY,currentSharedOrder.id);location.href='production-form.html'});
+  $('backBtn').addEventListener('click',()=>{if(processDirty&&!confirm('You have unsaved production changes. Leave this page?'))return;if(currentSharedOrder)localStorage.setItem(CURRENT_KEY,currentSharedOrder.id);location.href='production-form.html'});
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 </script>
