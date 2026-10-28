@@ -704,16 +704,20 @@ function applyFinishing(data){
 
 function getFormSnapshot(){
   const ids=['formatNo','revDate','submittedOn','submittedBy','submittedFor','ink','time','dye','name','description','w','h','material','qty','productCode','signature','approvalDate','preparedBy','checkedBy','approvedBy'];
-  const data={}; ids.forEach(id=>{const el=$(id);if(el)data[id]=id==='ink'?normalizeNumber(el.value):el.value});
-  // Carry optimistic concurrency metadata into existing-order saves.
+  // Preserve non-form fields from historical records instead of silently deleting them.
   const previous=readOrders().find(o=>o.id===currentOrderId());
+  const data={...(previous?.data||{})}; ids.forEach(id=>{const el=$(id);if(el)data[id]=id==='ink'?normalizeNumber(el.value):el.value});
+  // Carry optimistic concurrency metadata into existing-order saves.
   if(previous?.data?._revision!=null)data._revision=previous.data._revision;
   if(previous?.data?._proofRevision!=null)data._proofRevision=previous.data._proofRevision;
   data.colours=structuredClone(colours);
   data.process={stages:structuredClone(stages),progress:processProgress};
   data.finishing=readFinishing();
   if(artworkOriginal) data.originalArtwork=artworkOriginal;
-  const art=$('artPreview'); if(art?.src?.startsWith('data:')) data.artwork=art.src;
+  else delete data.originalArtwork;
+  const art=$('artPreview');
+  if(art?.src?.startsWith('data:'))data.artwork=art.src;
+  else delete data.artwork;
   return data;
 }
 function setArtwork(src){
