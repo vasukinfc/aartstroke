@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Aart Stroke labels and packaging production management workspace">
-<title>Aart Stroke | Production Workspace</title>
+<meta name="description" content="Vasuki NFC labels and packaging production management workspace">
+<title>Vasuki NFC | Production Hub</title>
 <style>
 :root{--bg:#f4f7fb;--surface:#fff;--ink:#172337;--muted:#728094;--border:#e2e8f0;--primary:#245edb;--primary-tint:#eef4ff;--green:#13835c;--amber:#bd7416;--shadow:0 9px 25px rgba(22,44,72,.045)}
 *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink);font-size:14px}
@@ -31,25 +31,35 @@ main{min-width:0;padding:28px clamp(16px,3vw,45px) 55px}.top{display:flex;align-
 @media(max-width:1150px){.workspace-grid{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:760px){.app{display:block}.sidebar{padding:13px 14px;gap:12px}.side-foot{display:none}.nav{display:flex;overflow:auto;padding-bottom:3px}.nav a,.nav button{flex-shrink:0;white-space:nowrap;padding:10px}.brand{padding:2px 0}.brand small{display:none}.top{flex-direction:column;align-items:flex-start}.top-actions{width:100%}.stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.stat{padding:16px}.stat-value{font-size:27px}.action-grid{grid-template-columns:1fr}.panel{padding:16px}main{padding:22px 13px 40px}.records-tools{width:100%}.records-tools input{width:100%}.records-tools select{flex:1}.panel-head{flex-wrap:wrap}}
 @media(max-width:370px){.stats{grid-template-columns:1fr}}
+
+/* Vasuki NFC identity layer (visual only; existing IDs and data remain unchanged) */
+:root{--vasuki-ink:#10131a;--vasuki-gold:#e3b762;--vasuki-violet:#6254cf}
+body{font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
+a,button{transition:background-color .16s ease,border-color .16s ease,box-shadow .16s ease}
+:focus-visible{outline:3px solid var(--vasuki-violet);outline-offset:2px}
+.brand-mark-image,.vasuki-logo-image{width:100%;height:100%;object-fit:contain;display:block}
+.vasuki-brandline{font-size:10px;letter-spacing:.11em;text-transform:uppercase;font-weight:800;color:var(--vasuki-violet)}
+@media(max-width:760px){button,input,select,textarea{font-size:14px;touch-action:manipulation}}
+.sidebar{background:var(--vasuki-ink)}.mark{background:#fff!important;padding:6px;border-radius:13px}.app .nav .selected{border-left-color:var(--vasuki-gold)}.top h1{letter-spacing:-.025em}
 </style>
 <script src="api-client.js"></script>
 </head>
 <body>
 <div class="app">
 <aside class="sidebar">
-  <div class="brand"><div class="mark">AS</div><div><strong>AART STROKE</strong><small>Production workspace</small></div></div>
+  <div class="brand"><div class="mark"><img class="brand-mark-image" src="https://vasukinfc.in/assets/vasuki-favicon.png" alt="Vasuki NFC logo" loading="eager"></div><div><strong>VASUKI NFC</strong><small>Production workspace</small></div></div>
   <nav class="nav" aria-label="Main navigation">
     <a class="selected" href="index.html" aria-current="page"><span class="sym">▦</span> Dashboard</a>
     <a href="production-form.html"><span class="sym">▤</span> Orders &amp; Forms</a>
     <a href="making-process.html"><span class="sym">◉</span> Making Process</a>
     <button type="button" id="trashNav"><span class="sym">♻</span> Trash &amp; Restore</button>
   </nav>
-  <div class="side-foot">LABELS &amp; PACKAGING<br>Artwork • Production • Approval<br>Protected workspace</div>
+  <div class="side-foot">SMART PRINT &amp; PRODUCTION<br>Secure artwork • Production • Approval<br>Protected workspace</div>
 </aside>
 <main>
   <div class="top">
-    <div><span class="eyebrow">Production control centre</span><h1>Workspace Overview</h1><p class="muted">Manage production orders, artwork approvals and stages in one place.</p></div>
-    <div class="top-actions"><button class="btn" type="button" id="refreshBtn">↻ Refresh</button><button class="btn" type="button" id="logoutBtn">Sign out</button><a class="btn primary" href="production-form.html">＋ Create Order</a></div>
+    <div><span class="eyebrow">Production control centre</span><h1>Vasuki NFC Production Hub</h1><p class="muted">Manage production orders, artwork approvals and stages in one place.</p></div>
+    <div class="top-actions"><span id="sessionRole" class="eyebrow" aria-label="Current role">Secure workspace</span><button class="btn" type="button" id="refreshBtn">↻ Refresh</button><button class="btn" type="button" id="logoutBtn">Sign out</button><a class="btn primary" href="production-form.html">＋ Create Order</a></div>
   </div>
   <div id="connection" class="status-banner" role="status" aria-live="polite">
     <span id="connectionText">This workspace contains protected business records. Connect to load shared orders.</span>
@@ -86,6 +96,7 @@ main{min-width:0;padding:28px clamp(16px,3vw,45px) 55px}.top{display:flex;align-
     <div class="panel-head"><div><h2>Recent &amp; saved orders</h2><p>Search orders and open their production forms or progress.</p></div>
     <div class="records-tools"><label class="visually-hidden" for="search">Search orders</label><input type="search" id="search" placeholder="Search orders or customers…"><label class="visually-hidden" for="filter">Filter orders</label><select id="filter"><option value="all">All statuses</option><option value="pending">Not started</option><option value="active">In production</option><option value="done">Completed</option><option value="overdue">Overdue</option></select></div></div>
     <div class="table-wrap"><table class="orders"><thead><tr><th>Order</th><th>Customer</th><th>Artwork / Description</th><th>Updated</th><th>Status</th><th>Open</th></tr></thead><tbody id="ordersBody"><tr><td colspan="6" class="empty">Connect to load orders</td></tr></tbody></table></div>
+    <div class="list-pagination" id="orderPagination" aria-label="Orders pagination" style="display:flex;align-items:center;gap:12px;justify-content:flex-end;margin-top:14px"><button type="button" class="btn" id="prevPage">← Previous</button><span id="pageInfo" role="status">Page 1</span><button type="button" class="btn" id="nextPage">Next →</button></div>
   </section>
   <section class="panel" id="trashPanel" style="margin-top:20px" aria-label="Archived orders">
     <div class="panel-head"><div><h2>Archived orders</h2><p>Deleted orders remain recoverable. Restore them to the production workspace.</p></div><button class="btn" id="closeTrash">Close</button></div>
@@ -97,7 +108,8 @@ main{min-width:0;padding:28px clamp(16px,3vw,45px) 55px}.top{display:flex;align-
 (function() {
   'use strict';
   const el = id => document.getElementById(id);
-  let orders = [], connected = false;
+  let orders = [], connected = false, page = 0;
+  const PAGE_SIZE = 50;
   const safe = value => String(value == null ? '' : value);
   function classify(order) {
     const process = order.data && order.data.process;
@@ -145,8 +157,11 @@ main{min-width:0;padding:28px clamp(16px,3vw,45px) 55px}.top{display:flex;align-
       return [o.orderNo,d.name,d.description,d.productCode,d.material].join(' ').toLowerCase().includes(term);
     });
     const tbody=el('ordersBody');tbody.replaceChildren();
-    if(!matches.length){appendEmpty(tbody,6,orders.length?'No matching orders.':'No saved orders.');return}
-    matches.slice(0,100).forEach(o=>{
+    if(!matches.length){el('pageInfo').textContent='No matching orders';el('prevPage').disabled=true;el('nextPage').disabled=true;appendEmpty(tbody,6,orders.length?'No matching orders.':'No saved orders.');return}
+    const pageCount=Math.max(1,Math.ceil(matches.length/PAGE_SIZE));page=Math.min(page,pageCount-1);
+    el('pageInfo').textContent=matches.length?'Showing '+(page*PAGE_SIZE+1)+'–'+Math.min((page+1)*PAGE_SIZE,matches.length)+' of '+matches.length:'No orders';
+    el('prevPage').disabled=page===0;el('nextPage').disabled=page>=pageCount-1;
+    matches.slice(page*PAGE_SIZE,(page+1)*PAGE_SIZE).forEach(o=>{
       const tr=document.createElement('tr'),d=o.data||{},status=classify(o);
       tr.appendChild(td(o.orderNo));tr.firstChild.style.fontWeight='800';
       tr.appendChild(td(d.name||'—'));tr.appendChild(td(d.description||'—'));
@@ -164,8 +179,9 @@ main{min-width:0;padding:28px clamp(16px,3vw,45px) 55px}.top{display:flex;align-
   async function connect() {
     setConnection('Connecting to shared production database…','',false);
     try {
-      orders=await ASAPI.listOrders();
+      orders=await ASAPI.listOrders({summary:true});
       connected=true;render();
+      ASAPI.session().then(info=>{const user=info.user||{};el('sessionRole').textContent=(user.name||'Staff')+' · '+(user.role||'authorized');}).catch(()=>{});
       setConnection('Connected to shared production records. Changes are stored on the server.','ok',false);
     } catch(e) {
       connected=false;
@@ -199,8 +215,10 @@ main{min-width:0;padding:28px clamp(16px,3vw,45px) 55px}.top{display:flex;align-
   el('logoutBtn').addEventListener('click',()=>ASAPI.logout());
   el('trashNav').addEventListener('click',openTrash);
   el('closeTrash').addEventListener('click',()=>el('trashPanel').classList.remove('open'));
-  el('search').addEventListener('input',()=>{if(connected)render()});
-  el('filter').addEventListener('change',()=>{if(connected)render()});
+  el('prevPage').addEventListener('click',()=>{page=Math.max(0,page-1);render()});
+  el('nextPage').addEventListener('click',()=>{page++;render()});
+  el('search').addEventListener('input',()=>{page=0;if(connected)render()});
+  el('filter').addEventListener('change',()=>{page=0;if(connected)render()});
   if(sessionStorage.getItem('as_admin_token'))connect();
 })();
 </script>
