@@ -1,7 +1,7 @@
-/* Aart Stroke API client. Authorization is only kept for the active browser tab. */
+/* Vasuki NFC Production Hub — retain legacy API endpoint and browser cache keys. */
 (function() {
   'use strict';
-  const ROOT = 'https://aartstroke.vasukinfc.workers.dev/api';
+  const ROOT = 'https://vasukinfc.workers.dev/api';
   const KEY = 'as_admin_token';
   window.AARTSTROKE_API = ROOT;
   function toLogin() {
@@ -52,10 +52,11 @@
       ['production-orders','production-current-order','production-form','production-process'].forEach(k=>localStorage.removeItem(k));
       location.assign('login.html');
     },
-    async listOrders() {
+    async session() { return request('/session'); },
+    async listOrders({summary=false}={}) {
       const all=[];let offset=0;
       for(let page=0;page<100;page++){
-        const result=await request('/orders?limit=100&offset='+offset);
+        const result=await request('/orders?limit=100&offset='+offset+(summary?'&view=summary':''));
         const items=result.orders||[];
         all.push(...items);
         if(result.nextOffset==null)return all;
