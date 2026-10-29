@@ -227,3 +227,11 @@ test('hashed employee keys give scoped access without changing existing admin to
  const outsider=await worker.fetch(req('/api/session','GET','wrong-key'),env);
  assert.equal(outsider.status,401);
 });
+
+test('all staff and customer UI uses the actual deployed Cloudflare Worker endpoint',()=>{
+  for(const path of ['api-client.js','login.html','approval.html']){
+    const content=fs.readFileSync(path,'utf8');
+    assert.match(content,/https:\/\/aartstroke\.vasukinfc\.workers\.dev\/api/,path+' must connect to the deployed API');
+    assert.doesNotMatch(content,/https:\/\/vasukinfc\.workers\.dev\/api/,path+' must not use an obsolete API hostname');
+  }
+});
