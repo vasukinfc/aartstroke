@@ -1,7 +1,7 @@
 /* Vasuki NFC Production Hub — retain legacy API endpoint and browser cache keys. */
 (function() {
   'use strict';
-  const ROOT = 'https://vasukinfc.workers.dev/api';
+  const ROOT = 'https://aartstroke.vasukinfc.workers.dev/api';
   const KEY = 'as_admin_token';
   window.AARTSTROKE_API = ROOT;
   function toLogin() {
