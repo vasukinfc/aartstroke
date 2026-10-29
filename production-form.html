@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="Aart Stroke digital approval and production form.">
-<title>Aart Stroke — Production Form</title>
+<meta name="description" content="Vasuki NFC digital approval and production form.">
+<title>Vasuki NFC — Production Form</title>
 <style>
 :root{
   --page:#f5f7fa;--card:#fff;--line:#cfd6de;--text:#1d2835;--muted:#697584;
@@ -443,6 +443,16 @@ body{min-height:100vh}button,input,select{font:inherit}
   .art-img{object-fit:contain;object-position:center;max-width:95%;height:auto}
   .order-ledger-message,.order-empty{font-size:12px}
 }
+
+/* Vasuki NFC identity layer (visual only; existing IDs and data remain unchanged) */
+:root{--vasuki-ink:#10131a;--vasuki-gold:#e3b762;--vasuki-violet:#6254cf}
+body{font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
+a,button{transition:background-color .16s ease,border-color .16s ease,box-shadow .16s ease}
+:focus-visible{outline:3px solid var(--vasuki-violet);outline-offset:2px}
+.brand-mark-image,.vasuki-logo-image{width:100%;height:100%;object-fit:contain;display:block}
+.vasuki-brandline{font-size:10px;letter-spacing:.11em;text-transform:uppercase;font-weight:800;color:var(--vasuki-violet)}
+@media(max-width:760px){button,input,select,textarea{font-size:14px;touch-action:manipulation}}
+.logo-swoosh{transform:none;letter-spacing:normal;width:44px;height:44px;line-height:normal;display:flex;align-items:center;justify-content:center}.logo-panel{gap:4px}.topbar .btn.primary{background:#181b25;border-color:#181b25}
 </style>
 </head>
 <body>
@@ -460,7 +470,7 @@ body{min-height:100vh}button,input,select{font:inherit}
 <div class="sheet">
 <section class="header">
   <div class="logo-panel">
-    <div class="logo-swoosh">⌁</div><div class="logo-name">AART STROKE</div><div class="logo-sub">LABELS &amp; PACKAGING</div><div class="logo-foot">PRINT • LABEL • PACK</div>
+    <div class="logo-swoosh"><img class="vasuki-logo-image" src="https://vasukinfc.in/assets/vasuki-favicon.png" alt="Vasuki NFC logo"></div><div class="logo-name">VASUKI NFC</div><div class="logo-sub">SMART PRINT &amp; PRODUCTION</div><div class="logo-foot">PRINT • LABEL • PACK</div>
   </div>
   <div class="heading">
     <h1>AFFIRMATION OF DIGITAL DATA</h1>
@@ -495,7 +505,7 @@ body{min-height:100vh}button,input,select{font:inherit}
       <button type="button" class="art-upload-btn" id="artUploadBtn">Upload File</button>
       <div class="art-upload-sub">PNG, JPG, JPEG, WEBP, SVG</div>
     </div>
-    <input id="artFileInput" class="art-file-input" type="file" accept="image/png,image/jpeg,image/jpg,image/webp,image/svg+xml">
+    <input id="artFileInput" class="art-file-input" type="file" accept="image/png,image/jpeg,image/jpg,image/webp,image/svg+xml,application/pdf">
     <div class="metal">Metallic Effect</div><div class="metal-line"></div>
     <img id="artPreview" class="art-img" alt="Sticker / label artwork">
     <button type="button" class="art-change-btn" id="artChangeBtn">Change Artwork</button>
@@ -631,8 +641,8 @@ const $=id=>document.getElementById(id);
 function escapeHtml(v){return String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch]))}
 function readJson(key,fallback){try{const v=JSON.parse(localStorage.getItem(key)||fallback);return v}catch(e){return null}}
 function safeProgress(v){return Math.max(0,Math.min(100,Number(v)||0))}
-function toIsoDate(v){if(!v)return '';const s=String(v);if(/^\\d{4}-\\d{2}-\\d{2}$/.test(s))return s;const m=s.match(/^(\\d{2})-(\\d{2})-(\\d{4})$/);return m?`${m[3]}-${m[2]}-${m[1]}`:''}
-function to24Hour(v){if(!v)return '';const s=String(v);if(/^\\d{2}:\\d{2}$/.test(s))return s;const m=s.match(/^(\\d{1,2}):(\\d{2})\\s*(AM|PM)$/i);if(!m)return '';let h=Number(m[1]);if(m[3].toUpperCase()==='PM'&&h<12)h+=12;if(m[3].toUpperCase()==='AM'&&h===12)h=0;return String(h).padStart(2,'0')+':'+m[2]}
+function toIsoDate(v){if(!v)return '';const s=String(v);if(/^\d{4}-\d{2}-\d{2}$/.test(s))return s;const m=s.match(/^(\d{2})-(\d{2})-(\d{4})$/);return m?`${m[3]}-${m[2]}-${m[1]}`:''}
+function to24Hour(v){if(!v)return '';const s=String(v);if(/^\d{2}:\d{2}$/.test(s))return s;const m=s.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);if(!m)return '';let h=Number(m[1]);if(m[3].toUpperCase()==='PM'&&h<12)h+=12;if(m[3].toUpperCase()==='AM'&&h===12)h=0;return String(h).padStart(2,'0')+':'+m[2]}
 function prettyDate(v){if(!v)return '';const s=String(v);const p=s.split('-');return p.length===3&&p[0].length===4?`${p[2]}-${p[1]}-${p[0]}`:s}
 function prettyTime(v){if(!v)return '';const p=String(v).split(':');if(p.length<2)return String(v);let h=Number(p[0]);const ap=h>=12?'PM':'AM';h=h%12||12;return `${String(h).padStart(2,'0')}:${p[1]} ${ap}`}
 function statusLabel(v){return v==='done'?'Completed':v==='active'?'In Progress':'Pending'}
@@ -694,12 +704,20 @@ function applyFinishing(data){
 
 function getFormSnapshot(){
   const ids=['formatNo','revDate','submittedOn','submittedBy','submittedFor','ink','time','dye','name','description','w','h','material','qty','productCode','signature','approvalDate','preparedBy','checkedBy','approvedBy'];
-  const data={}; ids.forEach(id=>{const el=$(id);if(el)data[id]=id==='ink'?normalizeNumber(el.value):el.value});
+  // Preserve non-form fields from historical records instead of silently deleting them.
+  const previous=readOrders().find(o=>o.id===currentOrderId());
+  const data={...(previous?.data||{})}; ids.forEach(id=>{const el=$(id);if(el)data[id]=id==='ink'?normalizeNumber(el.value):el.value});
+  // Carry optimistic concurrency metadata into existing-order saves.
+  if(previous?.data?._revision!=null)data._revision=previous.data._revision;
+  if(previous?.data?._proofRevision!=null)data._proofRevision=previous.data._proofRevision;
   data.colours=structuredClone(colours);
   data.process={stages:structuredClone(stages),progress:processProgress};
   data.finishing=readFinishing();
   if(artworkOriginal) data.originalArtwork=artworkOriginal;
-  const art=$('artPreview'); if(art?.src?.startsWith('data:')) data.artwork=art.src;
+  else delete data.originalArtwork;
+  const art=$('artPreview');
+  if(art?.src?.startsWith('data:'))data.artwork=art.src;
+  else delete data.artwork;
   return data;
 }
 function setArtwork(src){
@@ -746,7 +764,7 @@ function openMakingProcess(id=currentOrderId()){
   setCurrentOrderId(id);
   location.href='making-process.html?orderId='+encodeURIComponent(id);
 }
-function nextOrderNo(orders){let max=0;orders.forEach(o=>{const m=String(o.orderNo||'').match(/(\\d+)$/);if(m)max=Math.max(max,Number(m[1]))});return 'ORD-'+String(max+1).padStart(4,'0')}
+function nextOrderNo(orders){let max=0;orders.forEach(o=>{const m=String(o.orderNo||'').match(/(\d+)$/);if(m)max=Math.max(max,Number(m[1]))});return 'ORD-'+String(max+1).padStart(4,'0')}
 function formatSavedAt(v){const d=new Date(v);return Number.isNaN(d.getTime())?String(v||''):d.toLocaleString(undefined,{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})}
 function orderStatus(o){const p=o?.data?.process?.progress;return Number.isFinite(Number(p))?safeProgress(p)+'%':'Not started'}
 
@@ -916,7 +934,8 @@ async function showApprovalStatus(id){
   }
   try {
     const result=await ASAPI.listApprovals(id);
-    const currentRevision=readOrders().find(o=>o.id===id)?.data?._revision ?? 0;
+    const details=readOrders().find(o=>o.id===id)?.data||{};
+    const currentRevision=details._proofRevision??details._revision??0;
     const latest=(result.approvals||[]).find(a=>Number(a.revision)===Number(currentRevision));
     label.textContent=latest
       ? 'Current revision approval: '+String(latest.status).replaceAll('_',' ')+(latest.reviewer?' · '+latest.reviewer:'')
@@ -943,7 +962,7 @@ async function generateApprovalLink(){
   }catch(e){showMessage('Cannot create approval link: '+e.message)}
 }
 async function prepareArtwork(file){
-  const data=await compressArtwork(file);
+  const data=file.type==='application/pdf'?'':await compressArtwork(file);
   setArtwork(data);
   artworkOriginal=null;
   $('downloadOriginalBtn').hidden=true;
@@ -956,7 +975,7 @@ async function prepareArtwork(file){
   try {
     const uploaded=await ASAPI.uploadArtwork(file,currentOrderId()||'unassigned');
     artworkOriginal={key:uploaded.key,size:uploaded.size,mime:uploaded.contentType,name:file.name};
-    showOriginalStatus('Original artwork uploaded to private R2 storage ('+Math.round(uploaded.size/1024)+' KB).',true);
+    showOriginalStatus('Original artwork uploaded to private R2 storage ('+Math.round(uploaded.size/1024)+' KB).'+(file.type==='application/pdf'?' PDF original is saved; browser preview is unavailable.':''),true);
     showMessage('Original artwork securely uploaded; screen preview ready.');
   } catch(e) {
     showOriginalStatus('Original NOT stored: '+e.message+' Only a compressed preview is available.');

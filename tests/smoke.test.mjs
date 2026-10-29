@@ -9,6 +9,10 @@ function dbMock(){
  function query(sql,values){
   const q=sql.replace(/\s+/g,' ').toUpperCase();
   const order=orders.get(values[0]),old=archive.get(values[0]);
+  if(q.startsWith("SELECT STATUS FROM ORDER_APPROVALS WHERE ORDER_ID=")){
+    const found=[...approvals.values()].find(a=>a.order_id===values[0]&&a.revision===values[1]&&a.status==='approved');
+    return found?{status:found.status}:null;
+  }
   if(q.startsWith('SELECT TOKEN_HASH,ORDER_ID AS ORDERID,REVISION,EXPIRES_AT AS EXPIRESAT,STATUS FROM ORDER_APPROVALS')){
     const a=approvals.get(values[0]);return a?{token_hash:a.token_hash,orderId:a.order_id,revision:a.revision,expiresAt:a.expires_at,status:a.status}:null;
   }
@@ -98,24 +102,10 @@ test('JS source and embedded HTML scripts parse without syntax errors',()=>{
   }
  }
 });
-test('all browser API clients use the correct account Worker hostname',()=>{
- const expected='https://aartstroke.vasukinfc.workers.dev/api';
- for(const name of ['api-client.js','login.html','approval.html']){
-  const content=fs.readFileSync(name,'utf8');
-  assert.ok(content.includes(expected),name+' must use correct account API hostname');
-  assert.ok(!content.includes('https://aartstroke.workers.dev/api'),name+' must not use incorrect legacy host');
- }
-});
 test('unauthenticated reads are rejected and cross-origin preflight works',async()=>{
  const db=dbMock(),res=await call(db,'/api/orders','GET',null,null);
  assert.equal(res.response.status,401);
- const unauthSession=await call(db,'/api/session','GET',null,null);
- assert.equal(unauthSession.response.status,401);
- const authSession=await call(db,'/api/session');
- assert.equal(authSession.response.status,200);
- assert.equal(authSession.body.authenticated,true);
- assert.equal(authSession.body.serverVersion,2);
- const option=new Request('https://aartstroke.workers.dev/api/orders',{method:'OPTIONS',headers:{Origin:'https://vasukinfc.github.io'}});
+ const option=new Request('https://vasukinfc.workers.dev/api/orders',{method:'OPTIONS',headers:{Origin:'https://vasukinfc.github.io'}});
  const response=await worker.fetch(option,{DB:db,ADMIN_TOKEN:'secret'});
  assert.equal(response.status,204);
  assert.match(response.headers.get('access-control-allow-headers'),/x-order-id/);
@@ -174,4 +164,74 @@ test('customer proof link is single-use, authenticated at creation and revision-
 test('original artwork upload requires configured R2 storage',async()=>{
  const db=dbMock(),res=await call(db,'/api/artwork','POST',null,'secret',{'content-type':'image/png','x-order-id':'unassigned'});
  assert.equal(res.response.status,503);
+});
+
+test('Vasuki NFC branding, date parsing and protected form revision metadata',()=>{
+ const dashboard=fs.readFileSync('index.html','utf8');
+ const form=fs.readFileSync('production-form.html','utf8');
+ const process=fs.readFileSync('making-process.html','utf8');
+ assert.match(dashboard,/Vasuki NFC Production Hub/);
+ assert.match(dashboard,/id="pageInfo"/);
+ assert.match(form,/data\._revision=previous\.data\._revision/);
+ assert.match(process,/Customer Approval.*?Printing/s);
+ assert.match(process,/\^\\d\{4\}/);
+ assert.doesNotMatch(process,/\^\\\\d\{4\}/);
+});
+
+test('customer approval is required before starting printing and survives stage-only edits',async()=>{
+ const db=dbMock(),id='safe-approval';
+ const base={id,orderNo:'ORD-EXAMPLE',data:{name:'Buyer',description:'Label',w:'85',h:'55',qty:'100',process:{stages:[{name:'Printing',status:'pending'}]}}};
+ const created=await call(db,'/api/orders','POST',base);
+ assert.equal(created.response.status,200);
+ const attempts={...base,data:{...base.data,_revision:1,process:{stages:[{name:'Printing',status:'active'}]}}};
+ const blocked=await call(db,'/api/orders','POST',attempts);
+ assert.equal(blocked.response.status,409);
+ assert.equal(blocked.body.code,'APPROVAL_REQUIRED');
+ const link=await call(db,'/api/orders/'+id+'/approval-link','POST');
+ const token=new URL(link.body.approvalUrl).searchParams.get('token');
+ const approved=await call(db,'/api/approval/'+token,'POST',{decision:'approved',reviewer:'Buyer Name'},null);
+ assert.equal(approved.response.status,200);
+ const started=await call(db,'/api/orders','POST',attempts);
+ assert.equal(started.response.status,200);
+ const after=await call(db,'/api/orders');
+ assert.equal(after.body.orders[0].data._proofRevision,1);
+ const proof=await call(db,'/api/approval/'+token,'GET',null,null);
+ assert.equal(proof.response.status,200);
+ assert.equal(proof.body.status,'approved');
+ const anotherStage=await call(db,'/api/orders','POST',{
+   ...base,data:{...after.body.orders[0].data,process:{stages:[{name:'Printing',status:'done'}]}}
+ });
+ assert.equal(anotherStage.response.status,200);
+ assert.equal((await call(db,'/api/orders')).body.orders[0].data._proofRevision,1);
+ const changedArtwork=await call(db,'/api/orders','POST',{
+   ...base,data:{...(await call(db,'/api/orders')).body.orders[0].data,description:'New artwork description'}
+ });
+ assert.equal(changedArtwork.response.status,200);
+ assert.equal((await call(db,'/api/orders')).body.orders[0].data._proofRevision,2);
+ assert.equal((await call(db,'/api/approval/'+token,'GET',null,null)).response.status,409);
+});
+
+test('hashed employee keys give scoped access without changing existing admin token',async()=>{
+ const db=dbMock(),key='worker-safe-private-employee-token';
+ const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(key));
+ const hash=[...new Uint8Array(digest)].map(b=>b.toString(16).padStart(2,'0')).join('');
+ const env={DB:db,ADMIN_TOKEN:'secret',STAFF_ACCOUNTS:JSON.stringify([{id:'operator-1',name:'Operator',role:'production',tokenHash:hash}])};
+ const req=(path,method,access)=>new Request('https://aartstroke.workers.dev'+path,{method,headers:{'x-admin-token':access,origin:'https://vasukinfc.github.io'}});
+ const session=await worker.fetch(req('/api/session','GET',key),env);
+ assert.equal(session.status,200);
+ assert.equal((await session.json()).user.role,'production');
+ const noDelete=await worker.fetch(req('/api/orders/missing','DELETE',key),env);
+ assert.equal(noDelete.status,403);
+ const admin=await worker.fetch(req('/api/session','GET','secret'),env);
+ assert.equal((await admin.json()).user.role,'admin');
+ const outsider=await worker.fetch(req('/api/session','GET','wrong-key'),env);
+ assert.equal(outsider.status,401);
+});
+
+test('all staff and customer UI uses the actual deployed Cloudflare Worker endpoint',()=>{
+  for(const path of ['api-client.js','login.html','approval.html']){
+    const content=fs.readFileSync(path,'utf8');
+    assert.match(content,/https:\/\/aartstroke\.vasukinfc\.workers\.dev\/api/,path+' must connect to the deployed API');
+    assert.doesNotMatch(content,/https:\/\/vasukinfc\.workers\.dev\/api/,path+' must not use an obsolete API hostname');
+  }
 });

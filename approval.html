@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow,noarchive"><meta name="referrer" content="no-referrer">
-<title>Review Artwork | AART STROKE</title>
+<title>Review Artwork | VASUKI NFC</title>
 <style>
 :root{--blue:#245fd1;--border:#dce4ed;--muted:#617188}
 *{box-sizing:border-box}body{margin:0;padding:20px;background:#f2f6fa;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;color:#18283e}
@@ -16,14 +16,24 @@ h1{font-size:25px;letter-spacing:-.6px;margin:3px 0 11px}h2{font-size:18px;margi
 label{font-size:12px;font-weight:750;display:block;margin:16px 0 6px}input,textarea{font:inherit;border:1px solid #ccd8e8;width:100%;padding:13px;border-radius:9px;outline:none}textarea{resize:vertical;min-height:90px}input:focus,textarea:focus{outline:3px solid #d3e6ff;border-color:var(--blue)}
 .actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:17px}.actions button{flex:1 1 190px;border:1px solid var(--border);border-radius:10px;padding:13px;font-size:13px;font-weight:760;cursor:pointer}.approve{background:#178059;color:white;border-color:#178059!important}.changes{background:#fff;color:#ac5d2b}.actions button:disabled{opacity:.5;cursor:wait}.message{padding:13px 15px;border-radius:9px;border:1px solid #f0cbbb;background:#fff2ed;color:#994e2c;font-size:12px;line-height:1.6;margin:10px 0}.message.good{background:#e8f7ef;color:#156647;border-color:#b5dfcb}
 @media(max-width:560px){body{padding:12px}.details{grid-template-columns:1fr}.card{padding:18px}h1{font-size:22px}}
+
+/* Vasuki NFC identity layer (visual only; existing IDs and data remain unchanged) */
+:root{--vasuki-ink:#10131a;--vasuki-gold:#e3b762;--vasuki-violet:#6254cf}
+body{font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
+a,button{transition:background-color .16s ease,border-color .16s ease,box-shadow .16s ease}
+:focus-visible{outline:3px solid var(--vasuki-violet);outline-offset:2px}
+.brand-mark-image,.vasuki-logo-image{width:100%;height:100%;object-fit:contain;display:block}
+.vasuki-brandline{font-size:10px;letter-spacing:.11em;text-transform:uppercase;font-weight:800;color:var(--vasuki-violet)}
+@media(max-width:760px){button,input,select,textarea{font-size:14px;touch-action:manipulation}}
+button.primary,.btn.primary{background:#181b25!important;border-color:#181b25!important}
 </style>
 </head>
 <body>
 <main>
-  <header class="header"><div class="mark">AS</div><div><strong>AART STROKE</strong><small>Artwork approval portal</small></div></header>
+  <header class="header"><div class="mark">AS</div><div><strong>VASUKI NFC</strong><small>Artwork approval portal</small></div></header>
   <div class="card">
     <h1>Review your artwork</h1>
-    <p>Verify the spelling, numbers, placement and design before approving for production. Production colors may vary from screens; confirm any physical sample requirements with AART STROKE.</p>
+    <p>Verify the spelling, numbers, placement and design before approving for production. Production colors may vary from screens; confirm any physical sample requirements with VASUKI NFC.</p>
     <div id="message" class="message" role="status">Loading your protected artwork proof…</div>
     <section id="proofPanel" hidden>
       <dl class="details">
@@ -54,7 +64,7 @@ const id=n=>document.getElementById(n),message=id('message'),buttons=[id('change
 const url=root+'/approval/'+encodeURIComponent(token);
 function show(t,good=false){message.textContent=t;message.classList.toggle('good',good);message.hidden=false}
 async function load(){
- if(!/^[a-f0-9]{64}$/.test(token)){show('Invalid approval URL. Request a new link from AART STROKE.');return}
+ if(!/^[a-f0-9]{64}$/.test(token)){show('Invalid approval URL. Request a new link from VASUKI NFC.');return}
  try{
   const res=await fetch(url,{cache:'no-store',referrerPolicy:'no-referrer'}),data=await res.json();
   if(!res.ok||!data.ok)throw new Error(data.error||'Approval link unavailable.');
@@ -69,7 +79,7 @@ async function load(){
    id('proof').replaceChildren(image);
   }
   if(data.status==='pending'){message.hidden=true;id('formPanel').hidden=false}
-  else show('This proof has already been processed ('+data.status.replaceAll('_',' ')+'). Contact AART STROKE for any further changes.',true);
+  else show('This proof has already been processed ('+data.status.replaceAll('_',' ')+'). Contact VASUKI NFC for any further changes.',true);
  }catch(e){show(e.message||'Could not open artwork approval.')}
 }
 async function decide(decision){

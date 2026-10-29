@@ -1,4 +1,6 @@
+// Keep existing API host, D1 database, and legacy order IDs unchanged.
 const BASE_ORIGIN = 'https://vasukinfc.github.io';
+const APP_NAME = 'Vasuki NFC Production Hub';
 function corsHeaders(request, env) {
   const origin = request.headers.get('Origin');
   const allowed = [BASE_ORIGIN, ...(env.ALLOWED_ORIGINS || '').split(',').map(v=>v.trim()).filter(Boolean)];
@@ -53,6 +55,29 @@ function approvalSummary(row) {
   return {revision:Number(row.revision),status:row.status,createdAt:row.createdAt,expiresAt:row.expiresAt,
     respondedAt:row.respondedAt,reviewer:row.reviewer,note:row.note};
 }
+function proofFingerprint(value) {
+  const data={...(value||{})};
+  for(const key of ['process','_revision','_proofRevision','_lastEditedBy'])delete data[key];
+  return JSON.stringify(data);
+}
+function startsPrinting(previous,next) {
+  const oldStages=previous?.process?.stages||[],newStages=next?.process?.stages||[];
+  const oldPrint=oldStages.find(x=>String(x.name||'').toLowerCase()==='printing');
+  const newPrint=newStages.find(x=>String(x.name||'').toLowerCase()==='printing');
+  return !!newPrint && newPrint.status!=='pending' && (!oldPrint || oldPrint.status==='pending');
+}
+async function getIdentity(request,env) {
+  const key=request.headers.get('x-admin-token')||'';
+  if(!key)return null;
+  if(env.ADMIN_TOKEN && key===env.ADMIN_TOKEN)return {id:'administrator',name:'Administrator',role:'admin'};
+  if(!env.STAFF_ACCOUNTS)return null;
+  let people;
+  try{people=JSON.parse(env.STAFF_ACCOUNTS)}catch(_){return null}
+  if(!Array.isArray(people))return null;
+  const hashed=await digestToken(key);
+  const person=people.find(x=>x && x.tokenHash===hashed && ['admin','production','viewer'].includes(x.role) && x.enabled!==false);
+  return person?{id:String(person.id||'staff').slice(0,80),name:String(person.name||'Staff').slice(0,80),role:person.role}:null;
+}
 function publicOrder(row) {
   return {id:row.id, orderNo:row.orderNo, savedAt:row.savedAt, data:JSON.parse(row.dataJson)};
 }
@@ -77,7 +102,7 @@ export default {
         const order=await env.DB.prepare('SELECT order_no AS orderNo,data_json AS dataJson FROM orders WHERE id=?').bind(approval.orderId).first();
         if(!order)return reply({ok:false,error:'The referenced order is unavailable.'},404);
         const data=JSON.parse(order.dataJson);
-        if(Number(data._revision||0)!==Number(approval.revision))return reply({ok:false,error:'Artwork has changed. Request a new approval link.'},409);
+        if(Number(data._proofRevision??data._revision??0)!==Number(approval.revision))return reply({ok:false,error:'Artwork proof has changed. Request a new approval link.'},409);
         if(request.method==='GET'){
           return reply({ok:true,order:{orderNo:order.orderNo,name:String(data.name||''),description:String(data.description||''),width:String(data.w||''),height:String(data.h||''),artwork:typeof data.artwork==='string'&&data.artwork.startsWith('data:image/')?data.artwork:null},
             revision:Number(approval.revision),status:approval.status,expiresAt:approval.expiresAt});
@@ -93,19 +118,20 @@ export default {
         return reply({ok:true,status:decision,respondedAt:at});
       }catch(e){return reply({ok:false,error:e instanceof SyntaxError?'Invalid approval submission.':'Approval service unavailable.'},e instanceof SyntaxError?400:500)}
     }
-    // Protect reads as well as writes. Never put ADMIN_TOKEN inside public source files.
-    const token = env.ADMIN_TOKEN || '';
-    if (!token || request.headers.get('x-admin-token') !== token)
-      return reply({ok:false,error:'Authentication required. Enter your authorized access token.'},401);
+    // Optional hashed staff access keys; ADMIN_TOKEN continues to work unchanged.
+    const identity=await getIdentity(request,env);
+    if(!identity)return reply({ok:false,error:'Authentication required. Enter your authorized access key.'},401);
+    if(identity.role==='viewer' && request.method!=='GET')return reply({ok:false,error:'Read-only access. Ask an administrator for permission.'},403);
+    if(identity.role!=='admin' && (request.method==='DELETE'||path.endsWith('/restore')))return reply({ok:false,error:'Administrator permission required.'},403);
 
     try {
-      if (path === '/api/session' && request.method === 'GET')
-        return reply({ok:true,authenticated:true,serverVersion:2});
+      if(path==='/api/session' && request.method==='GET')return reply({ok:true,authenticated:true,serverVersion:3,application:APP_NAME,user:identity});
       if (path === '/api/orders' && request.method === 'GET') {
         const limit=Math.min(200,Math.max(1,Number.parseInt(url.searchParams.get('limit')||'100',10)||100));
         const offset=Math.max(0,Math.min(100000,Number.parseInt(url.searchParams.get('offset')||'0',10)||0));
         const q = await env.DB.prepare('SELECT id, order_no AS orderNo, saved_at AS savedAt, data_json AS dataJson FROM orders ORDER BY saved_at DESC, id DESC LIMIT ? OFFSET ?').bind(limit,offset).all();
         const orders=(q.results||[]).map(publicOrder);
+        if(url.searchParams.get('view')==='summary')for(const item of orders)delete item.data.artwork;
         return reply({ok:true,orders,nextOffset:orders.length===limit?offset+limit:null});
       }
       if (path === '/api/orders' && request.method === 'POST') {
@@ -125,7 +151,16 @@ export default {
           const revision = Number(oldData._revision || 0);
           if (!Number.isInteger(expected) || expected !== revision)
             return reply({ok:false,error:'This order was updated elsewhere. Reload it before saving again.',code:'REVISION_CONFLICT'},409);
-          const data = {...body.data,_revision:revision+1};
+          const previousProof=Number(oldData._proofRevision??oldData._revision??1);
+          const proofChanged=proofFingerprint(oldData)!==proofFingerprint(body.data);
+          const proofVersion=previousProof+(proofChanged?1:0);
+          const data={...body.data,_revision:revision+1,_proofRevision:proofVersion,_lastEditedBy:identity.id};
+          if(startsPrinting(oldData,data)){
+            await ensureApprovals(env.DB);
+            const signed=await env.DB.prepare("SELECT status FROM order_approvals WHERE order_id=? AND revision=? AND status='approved' LIMIT 1")
+              .bind(body.id,proofVersion).first();
+            if(!signed)return reply({ok:false,error:'Customer artwork approval is required before printing.',code:'APPROVAL_REQUIRED'},409);
+          }
           // Preserve the original order number through all edits and revisions.
           body.orderNo=existing.orderNo;
           await snapshotOrder(env.DB,existing);
@@ -135,7 +170,8 @@ export default {
             return reply({ok:false,error:'Concurrent update detected. Reload before saving.',code:'REVISION_CONFLICT'},409);
           return reply({ok:true,id:body.id,orderNo:body.orderNo.trim(),savedAt,revision:revision+1});
         }
-        const data = {...body.data,_revision:1};
+        const data={...body.data,_revision:1,_proofRevision:1,_lastEditedBy:identity.id};
+        if(startsPrinting(null,data))return reply({ok:false,error:'Customer artwork approval is required before printing.',code:'APPROVAL_REQUIRED'},409);
         // Allocate official order numbers on the database, never in a browser.
         // A previously deleted ID must not silently re-create an archived order.
         await ensureArchive(env.DB);
@@ -161,7 +197,8 @@ export default {
         const current=await env.DB.prepare('SELECT data_json AS dataJson FROM orders WHERE id=?').bind(id).first();
         if(!current)return reply({ok:false,error:'Order not found'},404);
         await ensureApprovals(env.DB);
-        const rev=Number(JSON.parse(current.dataJson)._revision||0);
+        const details=JSON.parse(current.dataJson);
+        const rev=Number(details._proofRevision??details._revision??0);
         const token=[...crypto.getRandomValues(new Uint8Array(32))].map(n=>n.toString(16).padStart(2,'0')).join('');
         const hash=await digestToken(token);
         const createdAt=new Date().toISOString(),expiresAt=new Date(Date.now()+3*24*60*60*1000).toISOString();
@@ -199,7 +236,10 @@ export default {
         if(!historical)return reply({ok:false,error:'Revision not found'},404);
         const latest=Number(JSON.parse(current.dataJson)._revision||0);
         await snapshotOrder(env.DB,current);
-        const restored={...JSON.parse(historical.dataJson),_revision:latest+1};
+        const currentData=JSON.parse(current.dataJson),historicalData=JSON.parse(historical.dataJson);
+        const previousProof=Number(currentData._proofRevision??currentData._revision??1);
+        const proofChanged=proofFingerprint(currentData)!==proofFingerprint(historicalData);
+        const restored={...historicalData,_revision:latest+1,_proofRevision:previousProof+(proofChanged?1:0),_lastEditedBy:identity.id};
         const savedAt=new Date().toISOString();
         const result=await env.DB.prepare('UPDATE orders SET order_no=?,saved_at=?,data_json=? WHERE id=? AND data_json=?')
           .bind(historical.orderNo,savedAt,JSON.stringify(restored),id,current.dataJson).run();
